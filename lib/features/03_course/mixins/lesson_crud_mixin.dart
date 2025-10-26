@@ -113,4 +113,74 @@ mixin LessonCrudMixin<T extends StatefulWidget> on State<T> {
       ),
     );
   }
+  // --- [BARU] FUNGSI UNTUK EDIT MATERI ---
+  void showEditLessonDialog(Module module, Lesson lesson) {
+    final titleController = TextEditingController(text: lesson.title);
+    final contentBodyController = TextEditingController(text: lesson.contentBody);
+    String contentType = lesson.contentType;
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setDialogState) { 
+            return AlertDialog(
+              title: Text('Edit Materi: ${lesson.title}'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(controller: titleController, decoration: const InputDecoration(hintText: 'Judul Materi'), autofocus: true),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: contentType,
+                      items: ['video', 'text', 'pdf'].map((type) => DropdownMenuItem(value: type, child: Text(type.toUpperCase()))).toList(),
+                      onChanged: (val) => setDialogState(() => contentType = val!),
+                      decoration: const InputDecoration(labelText: 'Tipe Konten'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: contentBodyController,
+                      decoration: InputDecoration(hintText: contentType == 'video' ? 'URL Video' : 'Isi Teks'),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(child: const Text('Batal'), onPressed: () => Navigator.pop(ctx)),
+                ElevatedButton(
+                  child: isLoading 
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white))
+                      : const Text('Simpan'),
+                  onPressed: isLoading ? null : () async {
+                    if (titleController.text.isEmpty) return;
+                    
+                    setDialogState(() => isLoading = true);
+                    try {
+                      await dataService.updateLesson(
+                        moduleId: module.moduleId,
+                        lessonId: lesson.lessonId,
+                        title: titleController.text,
+                        contentType: contentType,
+                        contentBody: contentBodyController.text,
+                      );
+                      if (!mounted) return;
+                      Navigator.pop(ctx);
+                      refreshData();
+                    } catch (e) {
+                      if (!mounted) return;
+                      setDialogState(() => isLoading = false);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }

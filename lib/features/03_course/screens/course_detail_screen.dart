@@ -22,6 +22,7 @@ import '../../05_quiz/screens/create_quiz_screen.dart';
 import '../../05_quiz/screens/quiz_screen.dart';
 import '../../04_lesson/screens/lesson_view_screen.dart';
 import '../../05_quiz/screens/quiz_editor_screen.dart';
+import '../../05_quiz/screens/quiz_welcome_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final Course course;
@@ -106,7 +107,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
             ? PopupMenuButton<String>(
                 onSelected: (String result) {
                   if (result == 'edit') {
-                    // TODO: Implementasi Edit Modul
+                    showEditModuleDialog(module); // <-- Mixin Call
                   } else if (result == 'delete') {
                     showDeleteModuleConfirmation(module); // <-- Mixin Call
                   }
@@ -156,11 +157,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               trailing: _isOwner
                   ? PopupMenuButton<String>(
                       onSelected: (String result) {
-                        if (result == 'delete') {
-                          showDeleteLessonConfirmation(
-                            module.moduleId,
+                        if (result == 'edit') {
+                          showEditLessonDialog(
+                            module,
                             lesson,
-                          ); // <-- Mixin Call
+                          ); // <-- PANGGIL FUNGSI INI
+                        } else if (result == 'delete') {
+                          showDeleteLessonConfirmation(module.moduleId, lesson);
                         }
                       },
                       itemBuilder: (BuildContext context) =>
@@ -216,26 +219,34 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
           quiz.title,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(
-          _isOwner ? 'Klik untuk mengedit kuis' : quiz.description,
-        ),
-        trailing: Row(
-          // Tambahkan Row untuk menampung ikon Edit/Delete Kuis
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_isOwner)
-              IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () => showDeleteQuizConfirmation(
-                  widget.course.courseId,
-                  quiz,
-                ), // <-- Panggil Hapus Kuis
-              ),
-            const Icon(Icons.arrow_forward_ios),
-          ],
-        ),
+        subtitle: Text(quiz.description),
+        trailing: _isOwner
+            ? PopupMenuButton<String>(
+                onSelected: (String result) {
+                  if (result == 'edit') {
+                    // Panggil fungsi edit dari mixin
+                    showEditQuizDialog(quiz);
+                  } else if (result == 'delete') {
+                    // Panggil fungsi hapus dari mixin
+                    showDeleteQuizConfirmation(widget.course.courseId, quiz); 
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'edit',
+                    child: Text('Edit Kuis'),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'delete',
+                    child: Text('Hapus Kuis', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              )
+            : const Icon(Icons.arrow_forward_ios),
         onTap: () {
+          // --- [PERBAIKAN DI SINI] ---
           if (_isOwner) {
+            // JIKA GURU: Buka Editor (Ini sudah benar)
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -246,11 +257,15 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               ),
             ).then((_) => _refreshData());
           } else {
+            // JIKA SISWA: Buka Halaman Welcome (Bukan QuizScreen langsung)
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    QuizScreen(quizId: quiz.quizId, quizTitle: quiz.title),
+                builder: (context) => QuizWelcomeScreen(
+                  // <-- PANGGIL INI
+                  quizId: quiz.quizId,
+                  quizTitle: quiz.title,
+                ),
               ),
             );
           }
@@ -267,16 +282,20 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
         title: Text(widget.course.title),
         backgroundColor: Colors.green,
         actions: [
+          // TOMBOL EDIT (Dipanggil dari Mixin)
           if (_isOwner)
             IconButton(
               icon: const Icon(Icons.edit),
-              onPressed: () => showEditCourseForm(),
-            ), // <-- Mixin Call
+              // PERBAIKAN: Hapus 'context' dan '() =>'
+              onPressed: showEditCourseForm,
+            ),
+          // TOMBOL DELETE (Dipanggil dari Mixin)
           if (_isOwner)
             IconButton(
               icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
-              onPressed: () => showDeleteConfirmation(context),
-            ), // <-- Mixin Call
+              // PERBAIKAN: Hapus 'context' dan '() =>'
+              onPressed: showDeleteConfirmation,
+            ),
         ],
       ),
       body: RefreshIndicator(

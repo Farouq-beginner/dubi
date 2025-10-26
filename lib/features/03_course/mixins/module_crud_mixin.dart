@@ -87,4 +87,62 @@ mixin ModuleCrudMixin<T extends StatefulWidget> on State<T> {
       ),
     );
   }
+
+  // --- [BARU] FUNGSI UNTUK EDIT NAMA MODUL ---
+  void showEditModuleDialog(Module module) {
+    final titleController = TextEditingController(text: module.title);
+    
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        // Gunakan StatefulBuilder agar tombol Simpan bisa punya state loading
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            bool isLoading = false;
+            return AlertDialog(
+              title: const Text('Edit Nama Modul'),
+              content: TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Judul Modul'),
+                autofocus: true,
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+                ElevatedButton(
+                  onPressed: isLoading ? null : () async {
+                    if (titleController.text.isEmpty) return;
+                    
+                    setDialogState(() => isLoading = true);
+                    try {
+                      await dataService.updateModule(
+                        courseId: courseId,
+                        moduleId: module.moduleId,
+                        title: titleController.text,
+                      );
+                      
+                      if (!mounted) return;
+                      Navigator.pop(ctx);
+                      refreshData(); // Refresh list
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Modul berhasil diperbarui!'), backgroundColor: Colors.green)
+                      );
+                    } catch (e) {
+                      if (!mounted) return;
+                      setDialogState(() => isLoading = false);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+                    }
+                  },
+                  child: isLoading 
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white)) 
+                      : const Text('Simpan'),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+  }
 }
+

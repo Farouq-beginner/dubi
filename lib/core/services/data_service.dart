@@ -68,12 +68,23 @@ class DataService {
     }
   }
 
+// --- Ambil Detail Kuis (UNTUK SISWA - menyembunyikan jawaban) ---
   Future<Quiz> fetchQuizDetails(int quizId) async {
     try {
       final response = await _dio.get('/quizzes/$quizId');
       return Quiz.fromJson(response.data['data']);
     } on DioException catch (e) {
       throw _handleDioError(e, 'Gagal memuat kuis');
+    }
+  }
+  
+  // --- [BARU] Ambil Detail Kuis (UNTUK GURU - menampilkan jawaban) ---
+  Future<Quiz> fetchQuizDetailsForTeacher(int quizId) async {
+    try {
+      final response = await _dio.get('/teacher/quizzes/$quizId'); // <-- Panggil Rute Guru
+      return Quiz.fromJson(response.data['data']);
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memuat editor kuis');
     }
   }
 
@@ -160,7 +171,7 @@ class DataService {
     required int courseId,
     required String title,
     required String description,
-    int? moduleId,
+    int? moduleId, int? duration,
   }) async {
     try {
       final response = await _dio.post(
@@ -305,29 +316,36 @@ class DataService {
     }
   }
 
-
   // --- QUIZ ---
-  Future<String> deleteQuiz({
-    required int courseId,
-    required int quizId,
-  }) async {
+  Future<String> updateQuiz({required int courseId, required int quizId, required String title, required String description, int? duration, int? moduleId}) async {
     try {
-      final response = await _dio.delete(
+      final response = await _dio.put(
         '/teacher/courses/$courseId/quizzes/$quizId',
+        data: {
+            'title': title,
+            'description': description,
+            'duration': duration, // <-- MENGIRIM DURATION (null jika kosong)
+            'module_id': moduleId, // <-- MENGIRIM MODULE_ID
+        },
       );
       return response.data['message'];
-    } on DioException catch (e) {
-      throw _handleDioError(e, 'Gagal menghapus kuis');
-    }
+    } on DioException catch (e) { throw _handleDioError(e, 'Gagal memperbarui kuis'); }
+  }
+
+  Future<String> deleteQuiz({required int courseId, required int quizId}) async {
+    try {
+      final response = await _dio.delete('/teacher/courses/$courseId/quizzes/$quizId');
+      return response.data['message'];
+    } on DioException catch (e) { throw _handleDioError(e, 'Gagal menghapus kuis'); }
   }
 
   // --- QUESTION ---
-  Future<String> updateQuestion({
+  Future<Question> updateQuestion({
     required int quizId,
     required int questionId,
     required String questionText,
     required String questionType,
-    required List<Map<String, dynamic>> answers,
+    required List<Map<String, dynamic>> answers, // Format: [{'answer_id': 1 (opsional), 'answer_text': 'Teks', 'is_correct': true/false}]
   }) async {
     try {
       final response = await _dio.put(
@@ -338,7 +356,8 @@ class DataService {
           'answers': answers,
         },
       );
-      return response.data['message'];
+      // API mengembalikan data pertanyaan yang sudah di-update
+      return Question.fromJson(response.data['data']);
     } on DioException catch (e) {
       throw _handleDioError(e, 'Gagal memperbarui pertanyaan');
     }

@@ -12,8 +12,10 @@ class CreateQuizScreen extends StatefulWidget {
 
 class _CreateQuizScreenState extends State<CreateQuizScreen> {
   final _formKey = GlobalKey<FormState>();
+
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _durationController = TextEditingController();
   bool _isLoading = false;
 
   Future<void> _submitForm() async {
@@ -27,14 +29,17 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
         courseId: widget.courseId,
         title: _titleController.text,
         description: _descriptionController.text,
+        duration: int.tryParse(_durationController.text),
       );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kuis baru berhasil dibuat!'), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text('Kuis baru berhasil dibuat!'),
+          backgroundColor: Colors.green,
+        ),
       );
       Navigator.of(context).pop(); // Kembali ke detail kursus
-
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -64,14 +69,29 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
               TextFormField(
                 controller: _titleController,
                 decoration: _buildInputDecoration('Judul Kuis'),
-                validator: (val) => val!.isEmpty ? 'Judul tidak boleh kosong' : null,
+                validator: (val) =>
+                    val!.isEmpty ? 'Judul tidak boleh kosong' : null,
               ),
+              SizedBox(height: 16),
+              TextFormField(
+                controller: _durationController, // <-- Ikat controller
+                decoration: _buildInputDecoration('Durasi (dalam menit)'),
+                keyboardType: TextInputType.number,
+                // Validator opsional
+                validator: (val) {
+                  if (val == null || val.isEmpty) return null; // Boleh kosong
+                  if (int.tryParse(val) == null) return 'Harus berupa angka';
+                  return null;
+                },
+              ),
+              SizedBox(height: 32),
               SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
                 decoration: _buildInputDecoration('Deskripsi Kuis'),
                 maxLines: 4,
-                validator: (val) => val!.isEmpty ? 'Deskripsi tidak boleh kosong' : null,
+                validator: (val) =>
+                    val!.isEmpty ? 'Deskripsi tidak boleh kosong' : null,
               ),
               SizedBox(height: 32),
               ElevatedButton(
@@ -82,7 +102,10 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
                 ),
                 child: _isLoading
                     ? CircularProgressIndicator(color: Colors.white)
-                    : Text('SIMPAN KUIS', style: TextStyle(color: Colors.white, fontSize: 16)),
+                    : Text(
+                        'SIMPAN KUIS',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
               ),
             ],
           ),

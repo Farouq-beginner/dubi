@@ -4,11 +4,16 @@ import '../../../core/models/quiz_model.dart';
 import '../../../core/models/question_model.dart';
 import '../../../core/services/data_service.dart';
 import 'add_question_screen.dart'; // Halaman Form Tambah Pertanyaan
+import 'edit_question_screen.dart';
 
 class QuizEditorScreen extends StatefulWidget {
   final int quizId;
   final String quizTitle;
-  const QuizEditorScreen({Key? key, required this.quizId, required this.quizTitle}) : super(key: key);
+  const QuizEditorScreen({
+    Key? key,
+    required this.quizId,
+    required this.quizTitle,
+  }) : super(key: key);
 
   @override
   _QuizEditorScreenState createState() => _QuizEditorScreenState();
@@ -18,29 +23,35 @@ class _QuizEditorScreenState extends State<QuizEditorScreen> {
   late Future<Quiz> _quizFuture;
   late DataService _dataService;
 
-  @override
+@override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _dataService = DataService(context);
-    _refreshQuiz(); // Panggil data saat pertama kali dimuat
+    _refreshQuiz();
   }
 
   // Fungsi untuk refresh data kuis
   void _refreshQuiz() {
     setState(() {
-      _quizFuture = _dataService.fetchQuizDetails(widget.quizId);
+      // PANGGIL API GURU, BUKAN API SISWA
+      _quizFuture = _dataService.fetchQuizDetailsForTeacher(widget.quizId); 
     });
   }
-  
+
   // Fungsi untuk konfirmasi dan hapus pertanyaan
   void _showDeleteConfirmation(Question question) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Hapus Pertanyaan?'),
-        content: Text('Anda yakin ingin menghapus pertanyaan:\n"${question.questionText}"?'),
+        content: Text(
+          'Anda yakin ingin menghapus pertanyaan:\n"${question.questionText}"?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
@@ -55,7 +66,10 @@ class _QuizEditorScreenState extends State<QuizEditorScreen> {
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
                 Navigator.pop(ctx);
               }
@@ -66,7 +80,6 @@ class _QuizEditorScreenState extends State<QuizEditorScreen> {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +97,9 @@ class _QuizEditorScreenState extends State<QuizEditorScreen> {
           if (snapshot.hasError) {
             return Center(child: Text('Error memuat kuis: ${snapshot.error}'));
           }
-          if (!snapshot.hasData || snapshot.data!.questions == null || snapshot.data!.questions!.isEmpty) {
+          if (!snapshot.hasData ||
+              snapshot.data!.questions == null ||
+              snapshot.data!.questions!.isEmpty) {
             return Center(
               child: Text(
                 'Kuis ini belum memiliki pertanyaan.\nTekan tombol + untuk menambahkannya.',
@@ -98,7 +113,9 @@ class _QuizEditorScreenState extends State<QuizEditorScreen> {
 
           // Tampilkan daftar pertanyaan yang ada
           return RefreshIndicator(
-            onRefresh: () async { _refreshQuiz(); },
+            onRefresh: () async {
+              _refreshQuiz();
+            },
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: questions.length,
@@ -110,33 +127,61 @@ class _QuizEditorScreenState extends State<QuizEditorScreen> {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.deepPurple[100],
-                      child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
                     ),
                     title: Text(question.questionText),
-                    subtitle: Text('(${question.answers.length} pilihan jawaban)'),
+                    subtitle: Text(
+                      '(${question.answers.length} pilihan jawaban)',
+                    ),
                     trailing: PopupMenuButton<String>(
                       onSelected: (String result) {
-                        if (result == 'delete') {
+                        if (result == 'edit') {
+                          // --- [PERBAIKAN] PANGGIL LAYAR EDIT ---
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditQuestionScreen(
+                                quizId: widget.quizId,
+                                question: question, // Kirim data pertanyaan
+                              ),
+                            ),
+                          ).then((isSuccess) {
+                            if (isSuccess == true) {
+                              _refreshQuiz(); // Refresh jika editan disimpan
+                            }
+                          });
+                        } else if (result == 'delete') {
                           _showDeleteConfirmation(question);
-                        } else if (result == 'edit') {
-                          // TODO: Implementasi Edit Pertanyaan
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur Edit belum diimplementasikan!')));
                         }
                       },
-                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(
-                          value: 'edit',
-                          child: Text('Edit Pertanyaan'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Text('Hapus Pertanyaan', style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'edit',
+                              child: Text('Edit Pertanyaan'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Text(
+                                'Hapus Pertanyaan',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
                     ),
                     onTap: () {
                       // Navigasi ke Halaman Edit/Preview Pertanyaan
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preview/Edit Pertanyaan...')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Preview/Edit Pertanyaan...'),
+                        ),
+                      );
                     },
                   ),
                 );
@@ -161,7 +206,10 @@ class _QuizEditorScreenState extends State<QuizEditorScreen> {
           });
         },
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Tambah Pertanyaan', style: TextStyle(color: Colors.white)),
+        label: const Text(
+          'Tambah Pertanyaan',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.deepPurple,
       ),
     );
