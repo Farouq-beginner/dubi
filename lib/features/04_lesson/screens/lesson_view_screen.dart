@@ -1,7 +1,7 @@
 // screens/lesson_view_screen.dart
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart'; // <-- Import
-import '../../../models/lesson_model.dart';
+import '../../../core/models/lesson_model.dart';
 
 class LessonViewScreen extends StatelessWidget {
   final Lesson lesson;

@@ -1,8 +1,8 @@
 // screens/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '/providers/auth_provider.dart';
-import '/models/user_model.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/models/user_model.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);

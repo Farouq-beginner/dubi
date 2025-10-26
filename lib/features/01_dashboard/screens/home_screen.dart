@@ -1,9 +1,9 @@
 // screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '/providers/auth_provider.dart';
-import '/models/course_model.dart';
-import '/services/data_service.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/models/course_model.dart';
+import '../../../core/services/data_service.dart';
 import 'package:dubi/features/03_course/screens/create_course_screen.dart';
 import 'package:dubi/features/03_course/screens/course_detail_screen.dart';
 import 'package:dubi/features/01_dashboard/widgets/course_bubble_clickable.dart'; // <-- Widget baru

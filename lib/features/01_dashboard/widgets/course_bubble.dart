@@ -1,6 +1,6 @@
 // widgets/course_bubble.dart
 import 'package:flutter/material.dart';
-import '../../../models/course_model.dart'; // Sesuaikan path
+import '../../../core/models/course_model.dart'; // Sesuaikan path
 
 class CourseBubbleClickable extends StatelessWidget {
   final Course course;

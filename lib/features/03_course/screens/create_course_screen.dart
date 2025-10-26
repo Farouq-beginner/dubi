@@ -1,8 +1,9 @@
 // screens/create_course_screen.dart
 import 'package:flutter/material.dart' hide Subject; // <-- PERBAIKAN 1: Sembunyikan 'Subject' dari material
-import '../../../services/data_service.dart';
-import '../../../models/level_model.dart';
-import '../../../models/subject_model.dart';
+import '../../../core/services/data_service.dart';
+import '../../../core/models/level_model.dart';
+import '../../../core/models/subject_model.dart';
+import '../../../core/models/course_model.dart';
 
 
 class CreateCourseScreen extends StatefulWidget {
@@ -49,7 +50,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   }
 
   // Fungsi untuk submit form
-  Future<void> _submitForm() async {
+Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
       return; // Jika form tidak valid, stop
     }
@@ -58,25 +59,29 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
     try {
       final dataService = DataService(context);
-      final message = await dataService.createCourse(
+      
+      // --- [PERBAIKAN] ---
+      // Panggil createCourse, yang sekarang mengembalikan Objek Course
+      final Course newCourse = await dataService.createCourse(
         title: _titleController.text,
         description: _descriptionController.text,
         levelId: _selectedLevelId!,
         subjectId: _selectedSubjectId!,
       );
+      // --------------------
 
-      // --- PERBAIKAN 2: Cek 'mounted' sebelum pakai context ---
-      // Ini untuk mencegah error jika user menutup halaman sebelum request selesai
       if (!mounted) return; 
 
-      // Tampilkan pesan sukses
+      // Tampilkan pesan sukses (kita bisa pakai nama kursus yg baru)
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
+        SnackBar(content: Text('Kursus "${newCourse.title}" berhasil dibuat!'), backgroundColor: Colors.green),
       );
       Navigator.of(context).pop(); // Kembali ke home
+    
     } catch (e) {
+      // JALUR GAGAL:
+      // 'e' adalah String error yang kita 'throw' dari data_service
       if (!mounted) return;
-      // Tampilkan pesan error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
       );

@@ -1,10 +1,10 @@
 // screens/quiz_screen.dart
 import 'package:flutter/material.dart';
-import '../../models/quiz_model.dart';
-import '../../models/question_model.dart';
-import '../../models/answer_model.dart';
-import '../../services/data_service.dart';
-import '../04_lesson/screens/quiz_result_screen.dart'; // Layar baru
+import '../../../core/models/quiz_model.dart';
+import '../../../core/models/question_model.dart';
+import '../../../core/models/answer_model.dart';
+import '../../../core/services/data_service.dart';
+import '../../04_lesson/screens/quiz_result_screen.dart'; // Layar baru
 
 class QuizScreen extends StatefulWidget {
   final int quizId;

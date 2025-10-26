@@ -1,6 +1,6 @@
 // widgets/course_bubble_clickable.dart
 import 'package:flutter/material.dart';
-import '/models/course_model.dart';
+import '../../../core/models/course_model.dart';
 
 class CourseBubbleClickable extends StatelessWidget {
   final Course course;
