@@ -15,14 +15,12 @@ class QuizResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Konversi skor ke double untuk perhitungan
     final double scoreDouble = (score as num).toDouble();
     
     String message;
     IconData icon;
     Color color;
 
-    // Logika untuk umpan balik berdasarkan skor
     if (scoreDouble >= 80) {
       message = 'Luar Biasa!';
       icon = Icons.star_rounded;
@@ -41,11 +39,13 @@ class QuizResultScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('Hasil Kuis'),
         backgroundColor: color,
-        automaticallyImplyLeading: false, // Sembunyikan tombol kembali
+        automaticallyImplyLeading: false, 
       ),
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
+        // --- [PERBAIKAN DI SINI] ---
+        // Bungkus Column dengan SingleChildScrollView agar bisa di-scroll
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32.0), // Pindahkan padding ke sini
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -87,7 +87,7 @@ class QuizResultScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () {
-                  // Kembali ke layar detail kursus (melewati QuizScreen dan QuizWelcomeScreen)
+                  // Kembali ke layar detail kursus
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
                 child: Text('Kembali ke Kursus', style: TextStyle(color: Colors.white, fontSize: 16)),
@@ -95,6 +95,7 @@ class QuizResultScreen extends StatelessWidget {
             ],
           ),
         ),
+        // --- [AKHIR PERBAIKAN] ---
       ),
     );
   }
