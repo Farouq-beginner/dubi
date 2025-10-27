@@ -12,6 +12,9 @@ import '../models/lesson_model.dart';
 import '../models/quiz_model.dart';
 import '../models/question_model.dart';
 import '../models/course_detail_model.dart';
+import '../models/student_progress_model.dart';
+import '../models/student_dashboard_model.dart';
+
 import '../providers/auth_provider.dart';
 
 class DataService {
@@ -68,7 +71,7 @@ class DataService {
     }
   }
 
-// --- Ambil Detail Kuis (UNTUK SISWA - menyembunyikan jawaban) ---
+  // --- Ambil Detail Kuis (UNTUK SISWA - menyembunyikan jawaban) ---
   Future<Quiz> fetchQuizDetails(int quizId) async {
     try {
       final response = await _dio.get('/quizzes/$quizId');
@@ -77,11 +80,13 @@ class DataService {
       throw _handleDioError(e, 'Gagal memuat kuis');
     }
   }
-  
+
   // --- [BARU] Ambil Detail Kuis (UNTUK GURU - menampilkan jawaban) ---
   Future<Quiz> fetchQuizDetailsForTeacher(int quizId) async {
     try {
-      final response = await _dio.get('/teacher/quizzes/$quizId'); // <-- Panggil Rute Guru
+      final response = await _dio.get(
+        '/teacher/quizzes/$quizId',
+      ); // <-- Panggil Rute Guru
       return Quiz.fromJson(response.data['data']);
     } on DioException catch (e) {
       throw _handleDioError(e, 'Gagal memuat editor kuis');
@@ -171,7 +176,8 @@ class DataService {
     required int courseId,
     required String title,
     required String description,
-    int? moduleId, int? duration,
+    int? moduleId,
+    int? duration,
   }) async {
     try {
       final response = await _dio.post(
@@ -317,26 +323,42 @@ class DataService {
   }
 
   // --- QUIZ ---
-  Future<String> updateQuiz({required int courseId, required int quizId, required String title, required String description, int? duration, int? moduleId}) async {
+  Future<String> updateQuiz({
+    required int courseId,
+    required int quizId,
+    required String title,
+    required String description,
+    int? duration,
+    int? moduleId,
+  }) async {
     try {
       final response = await _dio.put(
         '/teacher/courses/$courseId/quizzes/$quizId',
         data: {
-            'title': title,
-            'description': description,
-            'duration': duration, // <-- MENGIRIM DURATION (null jika kosong)
-            'module_id': moduleId, // <-- MENGIRIM MODULE_ID
+          'title': title,
+          'description': description,
+          'duration': duration, // <-- MENGIRIM DURATION (null jika kosong)
+          'module_id': moduleId, // <-- MENGIRIM MODULE_ID
         },
       );
       return response.data['message'];
-    } on DioException catch (e) { throw _handleDioError(e, 'Gagal memperbarui kuis'); }
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memperbarui kuis');
+    }
   }
 
-  Future<String> deleteQuiz({required int courseId, required int quizId}) async {
+  Future<String> deleteQuiz({
+    required int courseId,
+    required int quizId,
+  }) async {
     try {
-      final response = await _dio.delete('/teacher/courses/$courseId/quizzes/$quizId');
+      final response = await _dio.delete(
+        '/teacher/courses/$courseId/quizzes/$quizId',
+      );
       return response.data['message'];
-    } on DioException catch (e) { throw _handleDioError(e, 'Gagal menghapus kuis'); }
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal menghapus kuis');
+    }
   }
 
   // --- QUESTION ---
@@ -345,7 +367,8 @@ class DataService {
     required int questionId,
     required String questionText,
     required String questionType,
-    required List<Map<String, dynamic>> answers, // Format: [{'answer_id': 1 (opsional), 'answer_text': 'Teks', 'is_correct': true/false}]
+    required List<Map<String, dynamic>>
+    answers, // Format: [{'answer_id': 1 (opsional), 'answer_text': 'Teks', 'is_correct': true/false}]
   }) async {
     try {
       final response = await _dio.put(
@@ -363,7 +386,6 @@ class DataService {
     }
   }
 
-  
   Future<String> deleteQuestion({
     required int quizId,
     required int questionId,
@@ -376,6 +398,51 @@ class DataService {
       return response.data['message'];
     } on DioException catch (e) {
       throw _handleDioError(e, 'Gagal menghapus pertanyaan');
+    }
+  }
+
+  // --- [BARU] Untuk Dashboard Siswa ---
+  Future<StudentDashboard> fetchStudentDashboard() async {
+    try {
+      final response = await _dio.get('/student/dashboard');
+      return StudentDashboard.fromJson(response.data['data']);
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memuat dashboard siswa.');
+    }
+  }
+
+  // --- [BARU] Untuk Beranda (Browse) ---
+  Future<List<Level>> fetchBrowseData() async {
+    try {
+      final response = await _dio.get('/browse/courses');
+      // API mengembalikan List<Level>, dan setiap Level punya List<Course>
+      List<dynamic> data = response.data['data'];
+      return data.map((json) => Level.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memuat data kursus.');
+    }
+  }
+
+  // --- [BARU] Ambil Kursus berdasarkan Level ---
+  Future<List<Course>> fetchCoursesByLevel(int levelId) async {
+    try {
+      final response = await _dio.get('/courses/level/$levelId');
+      List<dynamic> data = response.data['data'];
+      // Kita perlu parsing 'level' dan 'subject' yang di-nest
+      return data.map((json) => Course.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memuat kursus level ini.');
+    }
+  }
+
+  // --- [BARU] Ambil Kursus berdasarkan Subject ---
+  Future<List<Course>> fetchCoursesBySubject(int subjectId) async {
+    try {
+      final response = await _dio.get('/courses/subject/$subjectId');
+      List<dynamic> data = response.data['data'];
+      return data.map((json) => Course.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memuat kursus mata pelajaran ini.');
     }
   }
 }

@@ -26,7 +26,7 @@ mixin CourseCrudMixin<T extends StatefulWidget> on State<T> {
     final descController = TextEditingController(text: course.description);
 
     // Inisialisasi state lokal untuk dropdown
-    int? selectedLevelId = course.level.levelId;
+    int? selectedLevelId = course.level?.levelId;
     int? selectedSubjectId = course.subject.subjectId;
 
     final levelsFuture = dataService.fetchLevels();
