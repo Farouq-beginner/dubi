@@ -1,8 +1,9 @@
 // main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'core/providers/auth_provider.dart';  // Sesuaikan path
+import 'core/providers/auth_provider.dart'; // Sesuaikan path
 import 'features/screens/auth_check_screen.dart'; // Sesuaikan path
+import 'features/00_auth/screens/splash_screen.dart'; // Import SplashScreen
 
 void main() {
   runApp(
@@ -20,11 +21,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'DuBI App',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        fontFamily: 'Arial',
-      ),
-      home: AuthCheckScreen(), // Mulai dari AuthCheckScreen
+      theme: ThemeData(primarySwatch: Colors.green, fontFamily: 'Arial'),
+      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

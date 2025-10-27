@@ -16,28 +16,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   String _role = 'student'; // Default role
   int? _selectedLevelId; // Untuk menyimpan level ID (TK, SD, dll)
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   // Data dummy untuk jenjang (nanti bisa diambil dari API)
-  final Map<String, int> _levels = {
-    'TK': 1,
-    'SD': 2,
-    'SMP': 3,
-    'SMA': 4,
-  };
+  final Map<String, int> _levels = {'TK': 1, 'SD': 2, 'SMP': 3, 'SMA': 4};
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return; // Validasi form
 
     setState(() => _isLoading = true);
-    
+
     // Pastikan level diisi jika role-nya student
     if (_role == 'student' && _selectedLevelId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Siswa wajib memilih jenjang (TK/SD/SMP/SMA)'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Siswa wajib memilih jenjang (TK/SD/SMP/SMA)'),
+          backgroundColor: Colors.red,
+        ),
       );
       setState(() => _isLoading = false);
       return;
@@ -58,9 +57,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.green),
       );
-      
-      Navigator.of(context).pop(); // Kembali ke halaman login
 
+      Navigator.of(context).pop(); // Kembali ke halaman login
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
@@ -91,15 +89,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   Text(
                     'Ayo Bergabung!',
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.green[800]),
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[800],
+                    ),
                   ),
                   SizedBox(height: 32),
 
                   // --- Pilihan Role (Siswa / Guru) ---
                   SegmentedButton<String>(
                     segments: const [
-                      ButtonSegment(value: 'student', label: Text('Siswa'), icon: Icon(Icons.face)),
-                      ButtonSegment(value: 'teacher', label: Text('Guru'), icon: Icon(Icons.school)),
+                      ButtonSegment(
+                        value: 'student',
+                        label: Text('Siswa'),
+                        icon: Icon(Icons.face),
+                      ),
+                      ButtonSegment(
+                        value: 'teacher',
+                        label: Text('Guru'),
+                        icon: Icon(Icons.school),
+                      ),
                     ],
                     selected: {_role},
                     onSelectionChanged: (Set<String> newSelection) {
@@ -118,7 +128,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _nameController,
                     decoration: _buildInputDecoration('Nama Lengkap'),
-                    validator: (val) => val!.isEmpty ? 'Nama tidak boleh kosong' : null,
+                    validator: (val) =>
+                        val!.isEmpty ? 'Nama tidak boleh kosong' : null,
                   ),
                   SizedBox(height: 16),
 
@@ -126,7 +137,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _usernameController,
                     decoration: _buildInputDecoration('Username (unik)'),
-                    validator: (val) => val!.isEmpty ? 'Username tidak boleh kosong' : null,
+                    validator: (val) =>
+                        val!.isEmpty ? 'Username tidak boleh kosong' : null,
                   ),
                   SizedBox(height: 16),
 
@@ -135,16 +147,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _emailController,
                     decoration: _buildInputDecoration('Email'),
                     keyboardType: TextInputType.emailAddress,
-                    validator: (val) => val!.isEmpty || !val.contains('@') ? 'Email tidak valid' : null,
+                    validator: (val) => val!.isEmpty || !val.contains('@')
+                        ? 'Email tidak valid'
+                        : null,
                   ),
                   SizedBox(height: 16),
 
                   // --- Input Password ---
                   TextFormField(
                     controller: _passwordController,
-                    decoration: _buildInputDecoration('Password (min. 8 karakter)'),
-                    obscureText: true,
-                    validator: (val) => val!.length < 8 ? 'Password minimal 8 karakter' : null,
+                    obscureText: _obscurePassword,
+                    decoration:
+                        _buildInputDecoration(
+                          'Password (min. 8 karakter)',
+                        ).copyWith(
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.green,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                        ),
+                    validator: (val) =>
+                        val!.length < 8 ? 'Password minimal 8 karakter' : null,
                   ),
                   SizedBox(height: 16),
 
@@ -156,8 +188,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       hint: Text('Pilih Jenjang'),
                       items: _levels.entries.map((entry) {
                         return DropdownMenuItem<int>(
-                          value: entry.value, // value-nya adalah ID (1, 2, 3, 4)
-                          child: Text(entry.key), // teksnya adalah (TK, SD, ...)
+                          value:
+                              entry.value, // value-nya adalah ID (1, 2, 3, 4)
+                          child: Text(
+                            entry.key,
+                          ), // teksnya adalah (TK, SD, ...)
                         );
                       }).toList(),
                       onChanged: (int? newValue) {
@@ -165,9 +200,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           _selectedLevelId = newValue;
                         });
                       },
-                      validator: (val) => val == null ? 'Jenjang wajib diisi' : null,
+                      validator: (val) =>
+                          val == null ? 'Jenjang wajib diisi' : null,
                     ),
-                  
+
                   SizedBox(height: 32),
 
                   // --- Tombol Daftar ---
@@ -179,9 +215,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         minimumSize: Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
                       ),
-                      child: Text('DAFTAR', style: TextStyle(fontSize: 18, color: Colors.white)),
+                      child: Text(
+                        'DAFTAR',
+                        style: TextStyle(fontSize: 18, color: Colors.white),
+                      ),
                     ),
                 ],
               ),

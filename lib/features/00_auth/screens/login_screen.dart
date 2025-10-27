@@ -15,15 +15,16 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   Future<void> _handleLogin() async {
     setState(() => _isLoading = true);
     try {
       // Panggil provider untuk login
-      await Provider.of<AuthProvider>(context, listen: false).login(
-        _emailController.text,
-        _passwordController.text,
-      );
+      await Provider.of<AuthProvider>(
+        context,
+        listen: false,
+      ).login(_emailController.text, _passwordController.text);
       // (AuthCheckScreen akan otomatis pindah halaman)
     } catch (e) {
       // Tampilkan error jika login gagal
@@ -51,14 +52,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: 16),
                 Text(
                   'Selamat Datang!',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.green[800]),
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[800],
+                  ),
                 ),
                 Text(
                   'Masuk untuk mulai belajar',
                   style: TextStyle(fontSize: 18, color: Colors.black54),
                 ),
                 SizedBox(height: 40),
-                
+
                 // Form Email
                 TextField(
                   controller: _emailController,
@@ -66,15 +71,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 SizedBox(height: 16),
-                
+
                 // Form Password
                 TextField(
                   controller: _passwordController,
-                  decoration: _buildInputDecoration('Password kamu'),
-                  obscureText: true,
+                  obscureText: _obscurePassword,
+                  decoration: _buildInputDecoration('Password kamu').copyWith(
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.green,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                  ),
                 ),
                 SizedBox(height: 32),
-                
+
                 // Tombol Login
                 if (_isLoading)
                   CircularProgressIndicator()
@@ -84,17 +103,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       minimumSize: Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
                     ),
-                    child: Text('MASUK', style: TextStyle(fontSize: 18, color: Colors.white)),
+                    child: Text(
+                      'MASUK',
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
                   ),
-                
+
                 SizedBox(height: 20),
-                
+
                 // Link ke Register
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegisterScreen()));
+                    Navigator.of(
+                      context,
+                    ).push(MaterialPageRoute(builder: (_) => RegisterScreen()));
                   },
                   child: Text(
                     'Belum punya akun? Daftar di sini',
