@@ -117,7 +117,7 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: [BoxShadow(color: Colors.deepPurple.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 5))],
+  boxShadow: [BoxShadow(color: Colors.deepPurple.withValues(alpha: 0.3), blurRadius: 10, offset: Offset(0, 5))],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -137,7 +137,7 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
             children: [
               Text('${averageScore.toStringAsFixed(0)}%', style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text('0/10 jam', style: TextStyle(color: Colors.white.withOpacity(0.7))), // Placeholder
+              Text('0/10 jam', style: TextStyle(color: Colors.white.withValues(alpha: 0.7))), // Placeholder
             ],
           ),
         ],
@@ -159,7 +159,7 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
             Container(
               padding: const EdgeInsets.all(8.0),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 28), // <-- Ikon diperkecil

@@ -2,15 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/models/subject_model.dart';
 
 // Import semua layar yang akan menjadi Tab
+import '../../01_dashboard/screens/admin_user_management_screen.dart';
 import '../../01_dashboard/screens/browse_screen.dart';
 import '../../01_dashboard/screens/home_screen.dart';
 import '../../01_dashboard/screens/student_progress_screen.dart';
 import '../../02_profile/screens/profile_screen.dart';
-import '../../03_course/screens/subject_courses_screen.dart';
 import '../../06_sempoa/screens/sempoa_screen.dart'; // <-- Import SempoaScreen
+import '../../01_dashboard/screens/teacher_dashboard_screen.dart';
 
 class MainContainerScreen extends StatefulWidget {
   const MainContainerScreen({Key? key}) : super(key: key);
@@ -20,39 +20,37 @@ class MainContainerScreen extends StatefulWidget {
 }
 
 class _MainContainerScreenState extends State<MainContainerScreen> {
-  int _selectedIndex = 0; 
+  int _selectedIndex = 0;
   late List<Widget> _widgetOptions;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
-    final userRole = Provider.of<AuthProvider>(context, listen: false).user?.role;
 
-    // Tentukan Layar Dashboard (Tab 2) berdasarkan Role
+    final userRole = Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    ).user?.role;
+
+    // --- Tentukan Layar Dashboard (Tab 2) berdasarkan Role ---
     Widget dashboardTabScreen;
     if (userRole == 'student') {
       dashboardTabScreen = const StudentProgressScreen();
+    } else if (userRole == 'teacher') {
+      dashboardTabScreen = const TeacherDashboardScreen();
+    } else if (userRole == 'admin') {
+      dashboardTabScreen = const AdminUserManagementScreen(); // <-- BARU
     } else {
-      dashboardTabScreen = const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Text(
-            'Dashboard Progres hanya tersedia untuk akun Siswa.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ),
-      );
+      dashboardTabScreen = const Center(child: Text('Role tidak dikenal.'));
     }
 
     // Daftar 5 Layar Final
     _widgetOptions = <Widget>[
-      const BrowseScreen(),      // Indeks 0: Beranda
-      const HomeScreen(),        // Indeks 1: Course (Kursus Saya)
-      dashboardTabScreen,        // Indeks 2: Dashboard
-      const SempoaScreen(),      // Indeks 3: Sempoa
-      const ProfileScreen(),     // Indeks 4: Profil
+      const BrowseScreen(), // Indeks 0: Beranda
+      const HomeScreen(), // Indeks 1: Course (Kursus Saya)
+      dashboardTabScreen, // Indeks 2: Dashboard
+      const SempoaScreen(), // Indeks 3: Sempoa
+      const ProfileScreen(), // Indeks 4: Profil
     ];
   }
 
@@ -65,37 +63,50 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       // --- [PERBAIKAN] AppBar Kustom Statis ---
       appBar: AppBar(
         title: Row(
           children: [
             // Logo (jika Anda punya gambar logo)
-            // Image.asset('assets/logo.png', height: 36), 
+            // Image.asset('assets/logo.png', height: 36),
             // atau Ikon:
             Icon(Icons.book, color: Colors.white, size: 30),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('DuBI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
-                Text('Dunia Belajar Interactive', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text(
+                  'DuBI',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                  ),
+                ),
+                Text(
+                  'Dunia Belajar Interactive',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
               ],
             ),
           ],
         ),
         backgroundColor: Colors.green, // Tema hijau
         actions: [
-          IconButton(icon: Icon(Icons.search, color: Colors.white), onPressed: () {}),
-          IconButton(icon: Icon(Icons.notifications_none, color: Colors.white), onPressed: () {}),
+          IconButton(
+            icon: Icon(Icons.search, color: Colors.white),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: Icon(Icons.notifications_none, color: Colors.white),
+            onPressed: () {},
+          ),
         ],
         elevation: 0,
       ),
+
       // ----------------------------------------
-      
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
+      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed, // Wajib untuk 5 item
         items: const <BottomNavigationBarItem>[

@@ -1,12 +1,13 @@
 // screens/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/course_model.dart';
 import '../../../core/services/data_service.dart';
-import 'package:dubi/features/03_course/screens/create_course_screen.dart';
 import 'package:dubi/features/03_course/screens/course_detail_screen.dart';
-import 'package:dubi/features/01_dashboard/widgets/course_bubble_clickable.dart'; // <-- Widget baru
+import '../../../core/models/level_model.dart';
+import '../../../core/models/subject_model.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../widgets/course_card_item.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -19,11 +20,31 @@ class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Course>> _coursesFuture;
   late DataService _dataService;
 
+  // Filters & search
+  int? _selectedLevelId; // null = Semua
+  int? _selectedSubjectId; // null = Semua
+  String _search = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  // Lock behavior for student with fixed jenjang (non-Umum)
+  bool _isLockedToLevel = false;
+  int? _lockedLevelId; // set from AuthProvider for student
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _dataService = DataService(context);
     _coursesFuture = _dataService.fetchMyCourses(); // Panggil API dinamis
+
+    // Determine whether this user is locked to a specific jenjang
+    final auth = Provider.of<AuthProvider>(context);
+    final role = auth.user?.role ?? 'student';
+    final userLevelId = auth.user?.levelId;
+    _isLockedToLevel = role == 'student' && userLevelId != null; // Umum has null level_id
+    _lockedLevelId = _isLockedToLevel ? userLevelId : null;
+    if (_isLockedToLevel) {
+      _selectedLevelId = _lockedLevelId; // force filter
+    }
   }
 
   // Fungsi untuk refresh
@@ -35,12 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Ambil role pengguna untuk tombol FAB
-    final userRole = Provider.of<AuthProvider>(context, listen: false).user?.role;
-
     return Scaffold(
-      // --- TIDAK ADA APPBAR DI SINI (pindah ke MainContainerScreen) ---
-
       body: RefreshIndicator(
         onRefresh: _refreshCourses,
         child: FutureBuilder<List<Course>>(
@@ -56,86 +72,206 @@ class _HomeScreenState extends State<HomeScreen> {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
-                  child: Text(
-                    userRole == 'teacher'
-                        ? 'Anda belum membuat kursus.\nTekan + untuk memulai!'
-                        : 'Belum ada kursus untuk jenjang Anda.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
+                  child: Text('Belum ada kursus.', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.grey[600])),
                 ),
               );
             }
 
-            List<Course> courses = snapshot.data!;
-            
-            // --- [FITUR BARU] MENGELOMPOKKAN BERDASARKAN KATEGORI ---
-            final Map<String, List<Course>> groupedCourses = {};
-            for (var course in courses) {
-              String subjectName = course.subject.subjectName;
-              if (groupedCourses[subjectName] == null) {
-                groupedCourses[subjectName] = [];
-              }
-              groupedCourses[subjectName]!.add(course);
-            }
-            // --------------------------------------------------
+            final List<Course> courses = snapshot.data!;
 
-            // Ubah Map menjadi List Widget
-            List<Widget> categoryWidgets = [];
-            groupedCourses.forEach((subjectName, subjectCourses) {
-              // 1. Judul Kategori
-              categoryWidgets.add(
-                Padding(
-                  padding: const EdgeInsets.only(top: 24.0, bottom: 8.0, left: 16.0, right: 16.0),
-                  child: Text(
-                    subjectName,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                ),
-              );
-              
-              // 2. Daftar Kursus (Bubble)
-              categoryWidgets.addAll(
-                subjectCourses.map((course) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: CourseBubbleClickable(
-                      course: course,
-                      onTap: () {
-                        // Buka Detail Kursus
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CourseDetailScreen(course: course),
-                          ),
-                        ).then((_) => _refreshCourses()); // Refresh saat kembali
-                      },
-                    ),
-                  );
-                }).toList(),
-              );
-            });
-            
-            // Tampilkan sebagai ListView
+            // Build choices from data
+            final levelMap = <int, Level>{};
+            final subjectMap = <int, Subject>{};
+            for (final c in courses) {
+              if (c.level != null) levelMap[c.level!.levelId] = c.level!;
+              subjectMap[c.subject.subjectId] = c.subject;
+            }
+            final levels = levelMap.values.toList()..sort((a, b) => a.levelName.compareTo(b.levelName));
+            final subjects = subjectMap.values.toList()..sort((a, b) => a.subjectName.compareTo(b.subjectName));
+
+            // Apply filters and search
+            final filtered = courses.where((c) {
+              final matchLevel = _selectedLevelId == null || (c.level?.levelId == _selectedLevelId);
+              final matchSubject = _selectedSubjectId == null || c.subject.subjectId == _selectedSubjectId;
+              final matchSearch = _search.isEmpty || c.title.toLowerCase().contains(_search.toLowerCase());
+              return matchLevel && matchSubject && matchSearch;
+            }).toList();
+
             return ListView(
-              children: categoryWidgets,
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Header + Search
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Text(
+                            'Semua Course',
+                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(width: 8),
+                          if (_isLockedToLevel)
+                            _LevelBadge(
+                              text: levels.firstWhere(
+                                    (l) => l.levelId == _lockedLevelId,
+                                    orElse: () => Level(levelId: -1, levelName: '', courses: const []),
+                                  ).levelName,
+                            ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 160,
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (v) => setState(() => _search = v),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          prefixIcon: const Icon(Icons.search),
+                          hintText: 'Cari',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Fixed order level chips at top (Semua, TK, SD, SMP, SMA)
+                if (!_isLockedToLevel)
+                  _FilterSection(
+                    title: '',
+                    chips: [
+                      FilterChipData(label: 'Semua', selected: _selectedLevelId == null, onSelected: () => setState(() => _selectedLevelId = null)),
+                      ...['TK', 'SD', 'SMP', 'SMA']
+                          .map((name) {
+                            final lvl = levels.firstWhere(
+                              (l) => l.levelName.toUpperCase() == name,
+                              orElse: () => Level(levelId: -1, levelName: name, courses: const []),
+                            );
+                            final selected = _selectedLevelId != null && _selectedLevelId == lvl.levelId;
+                            return FilterChipData(
+                              label: name,
+                              selected: selected,
+                              onSelected: () => setState(() => _selectedLevelId = lvl.levelId == -1 ? null : lvl.levelId),
+                            );
+                          }),
+                    ],
+                  ),
+
+                const SizedBox(height: 8),
+
+                // Subjects chips (Semua plus derived subjects)
+                _FilterSection(
+                  title: '',
+                  chips: [
+                    FilterChipData(label: 'Semua', selected: _selectedSubjectId == null, onSelected: () => setState(() => _selectedSubjectId = null)),
+          ...subjects
+            .map((s) => FilterChipData(
+                              label: s.subjectName,
+                              selected: _selectedSubjectId == s.subjectId,
+                              onSelected: () => setState(() => _selectedSubjectId = s.subjectId),
+              )),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                ...filtered.map((c) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: CourseCardItem(
+                        course: c,
+                        levelTag: c.level?.levelName,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CourseDetailScreen(course: c),
+                            ),
+                          );
+                        },
+                      ),
+                    )),
+                if (filtered.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: Center(child: Text('Tidak ada kursus dengan filter saat ini.')),
+                  ),
+              ],
             );
           },
         ),
       ),
-      
-      // Tombol FAB (Floating Action Button) untuk Guru/Admin
-      floatingActionButton: (userRole == 'teacher' || userRole == 'admin')
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => CreateCourseScreen(),
-                )).then((_) => _refreshCourses()); // Refresh saat kembali
-              },
-              child: Icon(Icons.add, color: Colors.white),
-              backgroundColor: Colors.green,
-            )
-          : null,
+      // Tidak ada FAB untuk semua role agar konsisten seperti mock
+      floatingActionButton: null,
+    );
+  }
+}
+
+// Kapsul kecil untuk label jenjang di samping judul
+class _LevelBadge extends StatelessWidget {
+  final String text;
+  final VoidCallback? onTap;
+  const _LevelBadge({required this.text, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.isEmpty) return const SizedBox.shrink();
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+}
+
+class FilterChipData {
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+  FilterChipData({required this.label, required this.selected, required this.onSelected});
+}
+
+class _FilterSection extends StatelessWidget {
+  final String title; // optional label, unused when ''
+  final List<FilterChipData> chips;
+  const _FilterSection({required this.title, required this.chips});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title.isNotEmpty) ...[
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+        ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              ...chips.map((d) => Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ChoiceChip(
+                      label: Text(d.label),
+                      selected: d.selected,
+                      onSelected: (_) => d.onSelected(),
+                    ),
+                  )),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

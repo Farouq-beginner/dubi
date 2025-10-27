@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/providers/auth_provider.dart'; // Sesuaikan path
-import 'features/screens/auth_check_screen.dart'; // Sesuaikan path
 import 'features/00_auth/screens/splash_screen.dart'; // Import SplashScreen
 
 void main() {

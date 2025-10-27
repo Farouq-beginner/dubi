@@ -4,16 +4,16 @@ import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 
 // Import semua model dari core
+import '../models/user_model.dart';
 import '../models/level_model.dart';
 import '../models/subject_model.dart';
 import '../models/course_model.dart';
 import '../models/module_model.dart';
-import '../models/lesson_model.dart';
 import '../models/quiz_model.dart';
 import '../models/question_model.dart';
 import '../models/course_detail_model.dart';
-import '../models/student_progress_model.dart';
 import '../models/student_dashboard_model.dart';
+import '../models/sempoa_progress_model.dart';
 
 import '../providers/auth_provider.dart';
 
@@ -26,14 +26,23 @@ class DataService {
     _dio = Provider.of<AuthProvider>(context, listen: false).dio;
   }
 
-  // Helper untuk menangani error Dio dan mengembalikan pesan String
-  String _handleDioError(DioException e, String defaultMessage) {
-    if (e.response != null &&
-        e.response!.data != null &&
-        e.response!.data.containsKey('message')) {
+String _handleDioError(DioException e, String defaultMessage) {
+    // Cek jika respons adalah Map DAN memiliki 'message'
+    if (e.response != null && e.response!.data is Map && e.response!.data.containsKey('message')) {
       return e.response!.data['message'].toString();
     }
-    return defaultMessage;
+    
+    // Jika respons adalah 403 (HTML), beri pesan generik
+    if (e.response?.statusCode == 403) {
+      return 'Akses ditolak. Anda tidak memiliki izin.';
+    }
+    
+    // Jika 500 atau error lainnya (HTML), beri pesan server error
+    if (e.response?.statusCode == 500) {
+      return 'Terjadi kesalahan internal pada server.';
+    }
+    
+    return defaultMessage; // Fallback
   }
 
   // ------------------------------------------------------------------
@@ -445,4 +454,240 @@ class DataService {
       throw _handleDioError(e, 'Gagal memuat kursus mata pelajaran ini.');
     }
   }
+
+// ------------------------------------------------------------------
+  // --- ADMIN Operations -------------------------------------------
+  // ------------------------------------------------------------------
+
+// Fitur 1: (Read) Melihat Semua Pengguna
+  Future<List<User>> adminGetUsers() async {
+    try {
+      final response = await _dio.get('/admin/users');
+      List<dynamic> data = response.data['data'];
+      // Kita gunakan model User yang sudah ada
+      return data.map((json) => User.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memuat daftar pengguna.');
+    }
+  }
+
+  // Fitur 2 & 4: (Update) Mengedit Data Pengguna (Role, Nama, Email)
+  Future<User> adminUpdateUser({
+    required int userId,
+    required String fullName,
+    required String email,
+    required String role,
+    int? levelId,
+    String? password, // Opsional untuk reset password
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/admin/users/$userId',
+        data: {
+          'full_name': fullName,
+          'email': email,
+          'role': role,
+          'level_id': levelId,
+          'password': password, // Akan diabaikan jika null
+        },
+      );
+      return User.fromJson(response.data['data']);
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memperbarui pengguna.');
+    }
+  }
+
+  // Fitur 3: (Delete) Menghapus Pengguna
+  Future<String> adminDeleteUser(int userId) async {
+    try {
+      final response = await _dio.delete('/admin/users/$userId');
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal menghapus pengguna.');
+    }
+  }
+
+  // --- COURSE (ADMIN) ---
+  Future<String> adminUpdateCourse({
+    required int courseId,
+    required String title,
+    required String description,
+    required int levelId,
+    required int subjectId,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/admin/courses/$courseId',
+        data: {
+          'title': title,
+          'description': description,
+          'level_id': levelId,
+          'subject_id': subjectId
+        },
+      );
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memperbarui kursus (Admin).');
+    }
+  }
+
+  Future<String> adminDeleteCourse(int courseId) async {
+    try {
+      final response = await _dio.delete('/admin/courses/$courseId');
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal menghapus kursus (Admin).');
+    }
+  }
+
+  // --- MODULE (ADMIN) ---
+  Future<String> adminUpdateModule({
+    required int moduleId,
+    required String title,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/admin/modules/$moduleId',
+        data: {'title': title},
+      );
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memperbarui modul (Admin).');
+    }
+  }
+
+  Future<String> adminDeleteModule(int moduleId) async {
+    try {
+      final response = await _dio.delete('/admin/modules/$moduleId');
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal menghapus modul (Admin).');
+    }
+  }
+
+  // --- LESSON (ADMIN) ---
+  Future<String> adminUpdateLesson({
+    required int lessonId,
+    required String title,
+    required String contentType,
+    String? contentBody,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/admin/lessons/$lessonId',
+        data: {
+          'title': title,
+          'content_type': contentType,
+          'content_body': contentBody
+        },
+      );
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memperbarui materi (Admin).');
+    }
+  }
+
+  Future<String> adminDeleteLesson(int lessonId) async {
+    try {
+      final response = await _dio.delete('/admin/lessons/$lessonId');
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal menghapus materi (Admin).');
+    }
+  }
+
+  // --- QUIZ (ADMIN) ---
+  Future<String> adminUpdateQuiz({
+    required int quizId,
+    required String title,
+    required String description,
+    int? duration,
+    int? moduleId,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/admin/quizzes/$quizId',
+        data: {
+          'title': title,
+          'description': description,
+          'duration': duration,
+          'module_id': moduleId
+        },
+      );
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memperbarui kuis (Admin).');
+    }
+  }
+
+  Future<String> adminDeleteQuiz(int quizId) async {
+    try {
+      final response = await _dio.delete('/admin/quizzes/$quizId');
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal menghapus kuis (Admin).');
+    }
+  }
+
+  // --- QUESTION (ADMIN) ---
+  Future<String> adminUpdateQuestion({
+    required int questionId,
+    required String questionText,
+    required String questionType,
+    required List<Map<String, dynamic>> answers,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/admin/questions/$questionId',
+        data: {
+          'question_text': questionText,
+          'question_type': questionType,
+          'answers': answers
+        },
+      );
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memperbarui pertanyaan (Admin).');
+    }
+  }
+
+  Future<String> adminDeleteQuestion(int questionId) async {
+    try {
+      final response = await _dio.delete('/admin/questions/$questionId');
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal menghapus pertanyaan (Admin).');
+    }
+  }
+
+
+// --- [BARU] Sempoa Operations ---
+    Future<SempoaProgress> fetchSempoaProgress() async {
+        try {
+            final response = await _dio.get('/sempoa/progress');
+            return SempoaProgress.fromJson(response.data['data']);
+        } on DioException catch (e) {
+            throw _handleDioError(e, 'Gagal memuat progres Sempoa.');
+        }
+    }
+    
+  Future<String> saveSempoaProgress({
+        required int newScore,
+        required int newLevel,
+        required int newStreak, // <-- TAMBAHKAN INI
+    }) async {
+        try {
+            final response = await _dio.post(
+                '/sempoa/progress',
+                data: {
+                    'new_score': newScore,
+                    'new_level': newLevel,
+                    'new_streak': newStreak,
+                },
+            );
+            return response.data['message'];
+        } on DioException catch (e) {
+            throw _handleDioError(e, 'Gagal menyimpan progres Sempoa.');
+        }
+    }
 }

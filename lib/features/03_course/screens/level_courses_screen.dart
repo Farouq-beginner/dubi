@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/course_model.dart';
 import '../../../core/models/level_model.dart';
 import '../../../core/services/data_service.dart';
-import 'package:dubi/features/01_dashboard/widgets/course_bubble_clickable.dart';
+import '../../01_dashboard/widgets/course_card_item.dart';
 import 'course_detail_screen.dart';
 
 class LevelCoursesScreen extends StatefulWidget {
@@ -50,16 +50,21 @@ class _LevelCoursesScreenState extends State<LevelCoursesScreen> {
             padding: const EdgeInsets.all(16),
             itemCount: courses.length,
             itemBuilder: (context, index) {
-              return CourseBubbleClickable(
-                course: courses[index],
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CourseDetailScreen(course: courses[index]),
-                    ),
-                  );
-                },
+              final course = courses[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14.0),
+                child: CourseCardItem(
+                  course: course,
+                  levelTag: widget.level.levelName,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CourseDetailScreen(course: course),
+                      ),
+                    );
+                  },
+                ),
               );
             },
           );
