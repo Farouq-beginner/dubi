@@ -39,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.green[50],
+      backgroundColor: Colors.blue[50],
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -48,14 +48,14 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Ilustrasi/Logo (Contoh)
-                Icon(Icons.school, size: 100, color: Colors.green),
+                Icon(Icons.school, size: 100, color: Colors.blue),
                 SizedBox(height: 16),
                 Text(
                   'Selamat Datang!',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green[800],
+                    color: Colors.blue,
                   ),
                 ),
                 Text(
@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         _obscurePassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: Colors.green,
+                        color: Colors.blue,
                       ),
                       onPressed: () {
                         setState(() {
@@ -101,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ElevatedButton(
                     onPressed: _handleLogin,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.blue,
                       minimumSize: Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -124,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   child: Text(
                     'Belum punya akun? Daftar di sini',
-                    style: TextStyle(color: Colors.green, fontSize: 16),
+                    style: TextStyle(color: Colors.blue, fontSize: 16),
                   ),
                 ),
               ],
@@ -143,11 +143,14 @@ class _LoginScreenState extends State<LoginScreen> {
       fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(color: Colors.green.shade200),
+        borderSide: BorderSide(color: Colors.lightBlueAccent.shade200),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(color: Colors.green.shade200, width: 2),
+        borderSide: BorderSide(
+          color: Colors.lightBlueAccent.shade200,
+          width: 2,
+        ),
       ),
     );
   }
