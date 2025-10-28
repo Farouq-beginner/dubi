@@ -1,6 +1,7 @@
 // lib/features/01_dashboard/screens/admin_user_management_screen.dart
 import 'package:flutter/material.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/models/level_model.dart';
 import '../../../core/services/data_service.dart';
 
 class AdminUserManagementScreen extends StatefulWidget {
@@ -62,6 +63,8 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
     final nameController = TextEditingController(text: user.fullName);
     final emailController = TextEditingController(text: user.email);
     String selectedRole = user.role;
+    int? selectedLevelId = user.levelId; // jenjang saat ini (jika siswa)
+    final Future<List<Level>> levelsFuture = _dataService.fetchLevels();
     
     showDialog(
       context: context,
@@ -82,9 +85,47 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                         DropdownMenuItem(value: 'student', child: Text('Siswa')),
                         DropdownMenuItem(value: 'teacher', child: Text('Guru')),
                       ],
-                      onChanged: (val) => setDialogState(() => selectedRole = val!),
+                      onChanged: (val) => setDialogState(() {
+                        selectedRole = val!;
+                        // Reset level ketika mengganti role
+                        if (selectedRole != 'student') {
+                          selectedLevelId = null;
+                        } else {
+                          // default ke level user sebelumnya (jika ada)
+                          selectedLevelId = user.levelId;
+                        }
+                      }),
                       decoration: InputDecoration(labelText: 'Role'),
                     ),
+                    const SizedBox(height: 12),
+                    if (selectedRole == 'student')
+                      FutureBuilder<List<Level>>(
+                        future: levelsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8.0),
+                              child: LinearProgressIndicator(minHeight: 2),
+                            );
+                          }
+                          if (snapshot.hasError || !snapshot.hasData) {
+                            return const Text('Gagal memuat jenjang');
+                          }
+                          final levels = snapshot.data!;
+                          return DropdownButtonFormField<int>(
+                            value: selectedLevelId,
+                            items: levels
+                                .map((l) => DropdownMenuItem<int>(
+                                      value: l.levelId,
+                                      child: Text(l.levelName),
+                                    ))
+                                .toList(),
+                            onChanged: (val) => setDialogState(() => selectedLevelId = val),
+                            isExpanded: true,
+                            decoration: const InputDecoration(labelText: 'Jenjang (Siswa)'),
+                          );
+                        },
+                      ),
                   ],
                 ),
               );
@@ -95,12 +136,19 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
             ElevatedButton(
               onPressed: () async {
                 try {
+                  // Validasi sederhana
+                  if (selectedRole == 'student' && selectedLevelId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Pilih jenjang untuk siswa.'), backgroundColor: Colors.orange),
+                    );
+                    return;
+                  }
                   await _dataService.adminUpdateUser(
                     userId: user.userId,
                     fullName: nameController.text,
                     email: emailController.text,
                     role: selectedRole,
-                    levelId: selectedRole == 'student' ? user.levelId : null, // (Level edit bisa ditambahkan)
+                    levelId: selectedRole == 'student' ? selectedLevelId : null,
                   );
                   if (!mounted) return;
                   Navigator.pop(ctx);

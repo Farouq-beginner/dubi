@@ -8,6 +8,7 @@ import '../../../core/services/data_service.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../03_course/screens/level_courses_screen.dart';
 import '../../03_course/screens/subject_courses_screen.dart';
+import '../../99_main_container/screens/main_container_screen.dart';
 
 // Tipe data helper untuk menampung kedua future
 class BrowseData {
@@ -103,10 +104,10 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     orderLevels.indexOf(b.levelName.toUpperCase()),
                   ));
 
-            // Filter: Hilangkan 'Membaca' dan 'Berhitung'; urutkan sesuai mock
-            final orderSubjects = ['Bahasa Indonesia', 'Bahasa Inggris', 'Matematika', 'Sempoa'];
+            // Filter: Hilangkan 'Membaca', 'Berhitung' dan 'Sempoa' (Sempoa pindah ke Aksi Cepat)
+            final orderSubjects = ['Bahasa Indonesia', 'Bahasa Inggris', 'Matematika'];
             final subjects = snapshot.data!.subjects
-                .where((s) => s.subjectName != 'Membaca' && s.subjectName != 'Berhitung')
+                .where((s) => s.subjectName != 'Membaca' && s.subjectName != 'Berhitung' && s.subjectName != 'Sempoa')
                 .toList()
               ..sort((a, b) => orderSubjects.indexOf(a.subjectName).compareTo(
                     orderSubjects.indexOf(b.subjectName),
@@ -124,6 +125,36 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 Text(
                   'Ayo belajar dengan senang hati',
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                ),
+
+                // Aksi Cepat
+                const SizedBox(height: 16),
+                const Text('Aksi Cepat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.calculate,
+                        iconBg: const Color(0xFFF1E8FF),
+                        iconColor: const Color(0xFF7A5CFF),
+                        title: 'Sempoa',
+                        subtitle: 'Mainkan',
+                        onTap: () => MainContainerScreen.switchTo(context, 3),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.insights_outlined,
+                        iconBg: const Color(0xFFEAF8EF),
+                        iconColor: const Color(0xFF2DBE66),
+                        title: 'Dashboard',
+                        subtitle: 'Lihat progress',
+                        onTap: () => MainContainerScreen.switchTo(context, 2),
+                      ),
+                    ),
+                  ],
                 ),
 
                 _buildSectionTitle('Pilih Jenjang Pendidikan'),
@@ -325,6 +356,60 @@ class _SubjectTile extends StatelessWidget {
                 child: const Text('Interactive', style: TextStyle(color: Color(0xFF7A5CFF), fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------- Quick Action Card ----------------------------
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _QuickActionCard({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: iconColor),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                const SizedBox(height: 4),
+                Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              ],
+            )
           ],
         ),
       ),

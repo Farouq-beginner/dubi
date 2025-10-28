@@ -195,6 +195,7 @@ String _handleDioError(DioException e, String defaultMessage) {
           'title': title,
           'description': description,
           'module_id': moduleId,
+          'duration': duration,
         },
       );
       return Quiz.fromJson(response.data['data']);

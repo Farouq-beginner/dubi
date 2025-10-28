@@ -10,8 +10,12 @@ class AuthProvider with ChangeNotifier {
   final FlutterSecureStorage _storage = FlutterSecureStorage();
   final Dio _dio = Dio(
     BaseOptions(
+            // PENTING:
+      // Gunakan 10.0.2.2 untuk Android Emulator
+      // Gunakan http://127.0.0.1:8000 jika menjalankan di Chrome (Web)
+      // Pastikan server 'php artisan serve' Anda tetap berjalan!
       // Ganti '10.0.2.2' dengan '127.0.0.1' jika menjalankan di web (Chrome)
-      baseUrl: 'http://127.0.0.1:8000/api/',
+      baseUrl: 'http://10.71.88.58:8000/api/',
       connectTimeout: Duration(seconds: 5),
       receiveTimeout: Duration(seconds: 3),
     ),

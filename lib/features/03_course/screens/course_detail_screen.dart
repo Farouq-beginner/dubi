@@ -167,8 +167,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               leading: Icon(
                 lesson.contentType == 'video'
                     ? Icons.play_circle_fill
-                    : Icons.article,
-                color: Colors.grey[600],
+                    : (lesson.contentType == 'pdf' ? Icons.picture_as_pdf : Icons.article),
+                color: lesson.contentType == 'pdf' ? Colors.red[400] : Colors.grey[600],
               ),
               onTap: () => Navigator.push(
                 context,
@@ -547,7 +547,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                     controller: contentBodyController,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      labelText: contentType == 'video' ? 'URL Video' : 'Isi Konten',
+                      labelText: contentType == 'video'
+                          ? 'URL Video (MP4 langsung)'
+                          : (contentType == 'pdf' ? 'URL PDF' : 'Isi Konten'),
                     ),
                   ),
                 ],
@@ -560,6 +562,26 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                   if (isLoading) return;
                   setDialogState(() => isLoading = true);
                   try {
+                    // Validasi: jika video, wajib MP4 langsung dan bukan YouTube/Drive/Vimeo
+                    if (contentType == 'video') {
+                      final url = contentBodyController.text.trim();
+                      final uri = Uri.tryParse(url);
+                      final isHttp = uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+                      final isMp4 = uri != null && uri.path.toLowerCase().endsWith('.mp4');
+                      final host = uri?.host.toLowerCase() ?? '';
+                      final forbidden = host.contains('youtube.com') || host.contains('youtu.be') || host.contains('vimeo.com') || host.contains('drive.google.com');
+                      if (!isHttp || !isMp4 || forbidden) {
+                        if (!mounted) return;
+                        setDialogState(() => isLoading = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Gunakan tautan MP4 langsung (bukan YouTube/Drive/Vimeo).'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                    }
                     await dataService.adminUpdateLesson(
                       lessonId: lesson.lessonId,
                       title: titleController.text,

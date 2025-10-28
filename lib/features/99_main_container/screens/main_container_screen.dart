@@ -15,6 +15,12 @@ import '../../01_dashboard/screens/teacher_dashboard_screen.dart';
 class MainContainerScreen extends StatefulWidget {
   const MainContainerScreen({Key? key}) : super(key: key);
 
+  // Memungkinkan child screen (mis. Beranda) berpindah tab tanpa membuka halaman baru
+  static void switchTo(BuildContext context, int index) {
+    final state = context.findAncestorStateOfType<_MainContainerScreenState>();
+    state?._onItemTapped(index);
+  }
+
   @override
   State<MainContainerScreen> createState() => _MainContainerScreenState();
 }
