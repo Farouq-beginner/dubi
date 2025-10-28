@@ -22,7 +22,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  // Data dummy untuk jenjang (nanti bisa diambil dari API)
   final Map<String, int> _levels = {'TK': 1, 'SD': 2, 'SMP': 3, 'SMA': 4, 'UMUM': 5};
 
   Future<void> _handleRegister() async {

@@ -14,6 +14,7 @@ import '../models/question_model.dart';
 import '../models/course_detail_model.dart';
 import '../models/student_dashboard_model.dart';
 import '../models/sempoa_progress_model.dart';
+import '../models/leaderboard_model.dart';
 
 import '../providers/auth_provider.dart';
 
@@ -689,6 +690,17 @@ String _handleDioError(DioException e, String defaultMessage) {
             return response.data['message'];
         } on DioException catch (e) {
             throw _handleDioError(e, 'Gagal menyimpan progres Sempoa.');
+        }
+    }
+
+    // --- [BARU] Fetch Sempoa Leaderboard ---
+    Future<List<LeaderboardItem>> fetchSempoaLeaderboard() async {
+        try {
+            final response = await _dio.get('/sempoa/leaderboard');
+            List<dynamic> data = response.data['data'];
+            return data.map((json) => LeaderboardItem.fromJson(json)).toList();
+        } on DioException catch (e) {
+            throw _handleDioError(e, 'Gagal memuat Leaderboard Sempoa.');
         }
     }
 }

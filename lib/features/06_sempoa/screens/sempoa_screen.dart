@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/services/data_service.dart';
 import '../../../core/models/sempoa_progress_model.dart';
 import 'sempoa_challenge_screen.dart';
+import 'leaderboard_screen.dart';
 
 class SempoaScreen extends StatefulWidget {
   const SempoaScreen({super.key});
@@ -183,6 +184,25 @@ class _SempoaScreenState extends State<SempoaScreen> {
                           ),
                         ),
                         onPressed: () => _startChallenge(progress),
+                      ),
+                      const SizedBox(height: 12),
+                      // Tombol Leaderboard
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.leaderboard, color: Colors.green),
+                        label: const Text('Leaderboard', style: TextStyle(color: Colors.green)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                          side: const BorderSide(color: Color(0xFF7A5CFF)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LeaderboardScreen(),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
