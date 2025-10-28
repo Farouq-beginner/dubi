@@ -22,6 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  // Data dummy untuk jenjang (nanti bisa diambil dari API)
   final Map<String, int> _levels = {'TK': 1, 'SD': 2, 'SMP': 3, 'SMA': 4, 'UMUM': 5};
 
   Future<void> _handleRegister() async {
@@ -70,12 +71,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.green[50],
+      backgroundColor: Colors.blue[50],
       appBar: AppBar(
         title: Text('Daftar Akun Baru'),
-        backgroundColor: Colors.transparent,
+        centerTitle: true,
+        backgroundColor: Colors.blue,
         elevation: 0,
-        foregroundColor: Colors.green[800],
+        foregroundColor: Colors.blue[50],
       ),
       body: SafeArea(
         child: Center(
@@ -91,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green[800],
+                      color: Colors.blue,
                     ),
                   ),
                   SizedBox(height: 32),
@@ -118,7 +120,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                     style: SegmentedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      selectedBackgroundColor: Colors.green[200],
+                      selectedBackgroundColor: Colors.lightBlueAccent,
                     ),
                   ),
                   SizedBox(height: 24),
@@ -165,7 +167,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               _obscurePassword
                                   ? Icons.visibility_off
                                   : Icons.visibility,
-                              color: Colors.green,
+                              color: Colors.blue,
                             ),
                             onPressed: () {
                               setState(() {
@@ -212,7 +214,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ElevatedButton(
                       onPressed: _handleRegister,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: Colors.blue,
                         minimumSize: Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
@@ -244,7 +246,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(color: Colors.green.shade200, width: 2),
+        borderSide: BorderSide(
+          color: Colors.lightBlueAccent.shade200,
+          width: 2,
+        ),
       ),
     );
   }
