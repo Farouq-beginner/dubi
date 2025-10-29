@@ -136,11 +136,7 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
             activeIcon: Icon(Icons.calculate),
             label: 'Sempoa',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profil',
-          ),
+
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.green[800], // Sesuaikan dengan tema DuBI

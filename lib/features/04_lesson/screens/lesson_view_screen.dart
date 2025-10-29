@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:flutter_cached_pdfview/flutter_cached_pdfview.dart';
+import 'youtube_screen.dart';
+import 'pdf_screen.dart';
 import '../../../core/models/lesson_model.dart';
 
 class LessonViewScreen extends StatefulWidget {
@@ -19,10 +19,11 @@ class LessonViewScreen extends StatefulWidget {
 class _LessonViewScreenState extends State<LessonViewScreen> {
   VideoPlayerController? _vpController;
   ChewieController? _chewieController;
-  WebViewController? _webViewController; // for Google Drive preview fallback
+  // Removed WebView-based Drive preview. Fullscreen viewers are used instead.
   bool _isLoading = false;
   String? _loadError;
   bool _showPreview = true;
+  bool _navigatedToMedia = false;
 
   @override
   void initState() {
@@ -83,6 +84,20 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
   // === VIDEO (YouTube) ===
   Widget _buildVideoContent() {
     final url = widget.lesson.contentBody ?? '';
+    // If this is a YouTube link, immediately navigate to the fullscreen YoutubeScreen
+    if (_isYouTubeUrl(url) && !_navigatedToMedia) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _navigatedToMedia = true;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => YoutubeScreen(videoUrl: url)),
+        );
+      });
+      // Return an empty placeholder while navigation happens
+      return const SizedBox.shrink();
+    }
+
     if (_showPreview) return _buildVideoPreview(url);
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -108,16 +123,8 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
       );
     }
 
-    // WebView fallback (e.g., Google Drive preview)
-    if (_webViewController != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: WebViewWidget(controller: _webViewController!),
-        ),
-      );
-    }
+    // We no longer attempt to render Drive previews inline. Drive/embedded previews
+    // open in fullscreen viewers or fallback to external browser.
 
     // Tautan tidak dapat diputar langsung: tampilkan pesan + tombol buka eksternal
     return Center(
@@ -143,7 +150,7 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
 
   // Preview kartu dengan thumbnail + tombol play
   Widget _buildVideoPreview(String url) {
-  _extractYouTubeId(url); // compute to reuse helper if needed later
+    _extractYouTubeId(url); // compute to reuse helper if needed later
 
     final Widget image = Container(
       decoration: BoxDecoration(
@@ -172,15 +179,25 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onTap: () {
-            setState(() {
-              _showPreview = false;
-              _isLoading = true;
-            });
-            _prepareVideo().whenComplete(() {
-              if (mounted) setState(() => _isLoading = false);
-            });
-          },
+            onTap: () {
+              // If it's a YouTube URL, open the YoutubePlayerScreen fullscreen
+              if (_isYouTubeUrl(url)) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => YoutubeScreen(videoUrl: url)),
+                );
+                return;
+              }
+
+              // For other network videos (MP4), prepare the native player
+              setState(() {
+                _showPreview = false;
+                _isLoading = true;
+              });
+              _prepareVideo().whenComplete(() {
+                if (mounted) setState(() => _isLoading = false);
+              });
+            },
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: AspectRatio(
@@ -217,6 +234,19 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
     if (url.isEmpty) {
       return const Text('Link PDF belum tersedia.');
     }
+    // Immediately navigate to PdfScreen for any PDF link (Drive or regular)
+    if (!_navigatedToMedia) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _navigatedToMedia = true;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PdfScreen(pdfUrl: url)),
+        );
+      });
+      return const SizedBox.shrink();
+    }
+
     // Platform-aware handling: PDF viewer plugin works on Android/iOS. For others or non-HTTPS, fallback.
     final scheme = Uri.tryParse(url)?.scheme.toLowerCase();
     final isSecure = scheme == 'https';
@@ -276,35 +306,57 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
       );
     }
 
-    final double viewerHeight = MediaQuery.of(context).size.height * 0.75;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        height: viewerHeight,
-        width: double.infinity,
-        child: PDF().fromUrl(
-          url,
-          placeholder: (progress) => Center(
-            child: Text('Memuat PDF... ${progress.toStringAsFixed(0)}%'),
+    // For non-Drive PDFs, show a simple preview placeholder and action buttons
+    final filename = Uri.tryParse(url)?.pathSegments.isNotEmpty == true
+        ? Uri.parse(url).pathSegments.last
+        : 'Dokumen PDF';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 200,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(12),
           ),
-          errorWidget: (error) => Center(
+          child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Gagal memuat PDF: $error'),
+                const Icon(Icons.picture_as_pdf, size: 56, color: Colors.redAccent),
                 const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  onPressed: () => _launchURL(url),
-                  icon: const Icon(Icons.open_in_new, color: Colors.white),
-                  label: const Text('BUKA DI BROWSER', style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                ),
+                Text(filename, style: const TextStyle(fontWeight: FontWeight.w600)),
               ],
             ),
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => PdfScreen(pdfUrl: url)),
+                    );
+                },
+              icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+              label: const Text('LIHAT PDF', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            ),
+            const SizedBox(width: 12),
+            OutlinedButton.icon(
+              onPressed: () => _launchURL(url),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Buka di browser'),
+            ),
+          ],
+        ),
+      ],
     );
+    
   }
 
   // === TEXT ===
@@ -346,18 +398,7 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
     return uri.host.contains('drive.google.com') && uri.pathSegments.contains('file');
   }
 
-  String? _drivePreviewUrl(String url) {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return null;
-    // Expecting /file/d/<ID>/view or similar
-    final segs = uri.pathSegments;
-    final dIndex = segs.indexOf('d');
-    if (dIndex != -1 && dIndex + 1 < segs.length) {
-      final id = segs[dIndex + 1];
-      return 'https://drive.google.com/file/d/$id/preview';
-    }
-    return null;
-  }
+  // Removed inline Drive preview helper (we open Drive files with the PDF screen instead).
 
   Future<void> _prepareVideo() async {
     if (widget.lesson.contentType != 'video') return;
@@ -391,16 +432,9 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
         );
       }
     } catch (e) {
-      // If native playback fails and it's a Google Drive link, use WebView preview
+      // If native playback fails, provide an explanatory error.
       if (_isGoogleDriveUrl(url)) {
-        final preview = _drivePreviewUrl(url);
-        if (preview != null) {
-          _webViewController = WebViewController()
-            ..setJavaScriptMode(JavaScriptMode.unrestricted)
-            ..loadRequest(Uri.parse(preview));
-        } else {
-          _loadError = 'Gagal menyiapkan video Google Drive.';
-        }
+        _loadError = 'Video dari Google Drive tidak didukung oleh pemutar aplikasi. Silakan buka di browser atau gunakan tautan MP4 langsung.';
       } else {
         _loadError = 'Format video tidak didukung atau memerlukan autentikasi.';
       }

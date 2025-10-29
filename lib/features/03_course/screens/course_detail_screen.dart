@@ -20,6 +20,8 @@ import '../mixins/quiz_question_crud_mixin.dart';
 // Layar tujuan (features)
 import '../../05_quiz/screens/create_quiz_screen.dart';
 import '../../04_lesson/screens/lesson_view_screen.dart';
+import '../../04_lesson/screens/youtube_screen.dart';
+import '../../04_lesson/screens/pdf_screen.dart';
 import '../../05_quiz/screens/quiz_editor_screen.dart';
 import '../../05_quiz/screens/quiz_welcome_screen.dart';
 
@@ -170,12 +172,39 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                     : (lesson.contentType == 'pdf' ? Icons.picture_as_pdf : Icons.article),
                 color: lesson.contentType == 'pdf' ? Colors.red[400] : Colors.grey[600],
               ),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LessonViewScreen(lesson: lesson),
-                ),
-              ),
+              onTap: () {
+                final url = lesson.contentBody ?? '';
+                if (lesson.contentType == 'video') {
+                  // YouTube links open the YoutubeScreen in-app
+                  if (url.contains('youtube.com') || url.contains('youtu.be')) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => YoutubeScreen(videoUrl: url)),
+                    );
+                    return;
+                  }
+                  // For other video links (e.g., direct MP4) fall back to LessonViewScreen which handles native playback
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => LessonViewScreen(lesson: lesson)),
+                  );
+                  return;
+                }
+
+                if (lesson.contentType == 'pdf') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => PdfScreen(pdfUrl: url)),
+                  );
+                  return;
+                }
+
+                // Default: open the lesson view for text or unknown types
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => LessonViewScreen(lesson: lesson)),
+                );
+              },
               trailing: _isOwner
                   ? PopupMenuButton<String>(
                       onSelected: (String result) {

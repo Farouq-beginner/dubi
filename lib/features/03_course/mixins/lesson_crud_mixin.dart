@@ -75,8 +75,8 @@ mixin LessonCrudMixin<T extends StatefulWidget> on State<T> {
                         labelText: contentType == 'text'
                             ? 'Isi Materi'
                             : (contentType == 'video'
-                                ? 'URL Video (MP4 langsung)'
-                                : 'Link Konten'),
+                                ? 'URL Video YouTube'
+                                : 'Link GDrive PDF'),
                       ),
                       maxLines: contentType == 'text' ? 5 : 1,
                     ),
@@ -95,10 +95,12 @@ mixin LessonCrudMixin<T extends StatefulWidget> on State<T> {
                     // Validasi: jika video, wajib MP4 langsung dan bukan YouTube/Drive/Vimeo
                     if (contentType == 'video') {
                       final url = contentBodyController.text.trim();
-                      if (!_isDirectMp4Url(url)) {
+                      // Allow either a direct MP4 or a YouTube link. Other hosts (e.g. Drive/Vimeo)
+                      // are still discouraged for direct playback in the app.
+                      if (!_isDirectMp4Url(url) && !_isYouTubeUrl(url)) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Gunakan URL video MP4 langsung (contoh: https://.../video.mp4).'),
+                            content: Text('Gunakan URL video MP4 langsung atau tautan YouTube.'),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -107,7 +109,7 @@ mixin LessonCrudMixin<T extends StatefulWidget> on State<T> {
                       if (_isForbiddenVideoHost(url)) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('URL YouTube/Drive/Vimeo tidak didukung. Harap unggah dan gunakan tautan file MP4 langsung.'),
+                            content: Text('Tautan dari Drive/Vimeo tidak didukung untuk video. Gunakan MP4 langsung atau YouTube.'),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -267,13 +269,13 @@ mixin LessonCrudMixin<T extends StatefulWidget> on State<T> {
                       : () async {
                           if (titleController.text.isEmpty) return;
 
-                          // Validasi: jika video, wajib MP4 langsung dan bukan YouTube/Drive/Vimeo
+                          // Jika video, bolehkan MP4 langsung atau tautan YouTube; blokir Drive/Vimeo
                           if (contentType == 'video') {
                             final url = contentBodyController.text.trim();
-                            if (!_isDirectMp4Url(url)) {
+                            if (!_isDirectMp4Url(url) && !_isYouTubeUrl(url)) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Gunakan URL video MP4 langsung (contoh: https://.../video.mp4).'),
+                                  content: Text('Gunakan URL video MP4 langsung atau tautan YouTube.'),
                                   backgroundColor: Colors.red,
                                 ),
                               );
@@ -282,7 +284,7 @@ mixin LessonCrudMixin<T extends StatefulWidget> on State<T> {
                             if (_isForbiddenVideoHost(url)) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('URL YouTube/Drive/Vimeo tidak didukung. Harap unggah dan gunakan tautan file MP4 langsung.'),
+                                  content: Text('Tautan dari Drive/Vimeo tidak didukung untuk video. Gunakan MP4 langsung atau YouTube.'),
                                   backgroundColor: Colors.red,
                                 ),
                               );
@@ -334,9 +336,14 @@ mixin LessonCrudMixin<T extends StatefulWidget> on State<T> {
     final uri = Uri.tryParse(url);
     if (uri == null) return false;
     final host = uri.host.toLowerCase();
-    return host.contains('youtube.com') ||
-        host.contains('youtu.be') ||
-        host.contains('vimeo.com') ||
-        host.contains('drive.google.com');
+    // Only forbid hosts we don't support playback for inside the app
+    return host.contains('vimeo.com') || host.contains('drive.google.com');
+  }
+
+  bool _isYouTubeUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    final host = uri.host.toLowerCase();
+    return host.contains('youtube.com') || host.contains('youtu.be');
   }
 }
