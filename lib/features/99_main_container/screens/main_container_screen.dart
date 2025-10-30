@@ -1,21 +1,22 @@
-// lib/features/99_main_container/screens/main_container_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/auth_provider.dart';
 
-// Import semua layar yang akan menjadi Tab
+// Import layar-layar
 import '../../01_dashboard/screens/admin_user_management_screen.dart';
 import '../../01_dashboard/screens/browse_screen.dart';
 import '../../01_dashboard/screens/home_screen.dart';
 import '../../01_dashboard/screens/student_progress_screen.dart';
 import '../../02_profile/screens/profile_screen.dart';
-import '../../06_sempoa/screens/sempoa_screen.dart'; // <-- Import SempoaScreen
+import '../../06_sempoa/screens/sempoa_screen.dart';
 import '../../01_dashboard/screens/teacher_dashboard_screen.dart';
 
 class MainContainerScreen extends StatefulWidget {
   const MainContainerScreen({Key? key}) : super(key: key);
 
-  // Memungkinkan child screen (mis. Beranda) berpindah tab tanpa membuka halaman baru
   static void switchTo(BuildContext context, int index) {
     final state = context.findAncestorStateOfType<_MainContainerScreenState>();
     state?._onItemTapped(index);
@@ -38,110 +39,146 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
       listen: false,
     ).user?.role;
 
-    // --- Tentukan Layar Dashboard (Tab 2) berdasarkan Role ---
     Widget dashboardTabScreen;
     if (userRole == 'student') {
       dashboardTabScreen = const StudentProgressScreen();
     } else if (userRole == 'teacher') {
       dashboardTabScreen = const TeacherDashboardScreen();
     } else if (userRole == 'admin') {
-      dashboardTabScreen = const AdminUserManagementScreen(); // <-- BARU
+      dashboardTabScreen = const AdminUserManagementScreen();
     } else {
       dashboardTabScreen = const Center(child: Text('Role tidak dikenal.'));
     }
 
-    // Daftar 5 Layar Final
     _widgetOptions = <Widget>[
-      const BrowseScreen(), // Indeks 0: Beranda
-      const HomeScreen(), // Indeks 1: Course (Kursus Saya)
-      dashboardTabScreen, // Indeks 2: Dashboard
-      const SempoaScreen(), // Indeks 3: Sempoa
-      const ProfileScreen(), // Indeks 4: Profil
+      const BrowseScreen(),
+      const HomeScreen(),
+      dashboardTabScreen,
+      const SempoaScreen(),
+      const ProfileScreen(),
     ];
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
+  }
+
+  // 🔧 Item ikon + teks + animasi bounce
+  Widget _buildNavItem(IconData icon, String label, bool isActive) {
+    final color = isActive ? Colors.white : Colors.white70;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // 🎯 Efek bounce hanya pada item aktif
+        isActive
+            ? BounceInDown(
+                duration: const Duration(milliseconds: 400),
+                from: 8,
+                child: Icon(icon, size: 28, color: color),
+              )
+            : Icon(icon, size: 26, color: color),
+        // Hide label if active (in page)
+        if (!isActive) ...[
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.normal,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // --- [PERBAIKAN] AppBar Kustom Statis ---
+      // 🌿 AppBar branding DuBI
       appBar: AppBar(
+        backgroundColor: Colors.lightBlueAccent.shade100,
+        elevation: 0,
         title: Row(
           children: [
-            // Logo (jika Anda punya gambar logo)
-            // Image.asset('assets/logo.png', height: 36),
-            // atau Ikon:
-            Icon(Icons.book, color: Colors.white, size: 30),
-            const SizedBox(width: 12),
+            Icon(Icons.menu_book_rounded, color: Colors.white, size: 32),
+            const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'DuBI',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
                     fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.15),
+                        offset: const Offset(1, 2),
+                        blurRadius: 4,
+                      ),
+                    ],
                   ),
                 ),
                 Text(
-                  'Dunia Belajar Interactive',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  'Dunia Belajar Interaktif',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.white70, // lembut, kontras pas
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ],
             ),
           ],
         ),
-        backgroundColor: Colors.green, // Tema hijau
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search, color: Colors.white),
-            onPressed: () {},
+
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF80D8FF), Color(0xFF4FC3F7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-          IconButton(
-            icon: Icon(Icons.notifications_none, color: Colors.white),
-            onPressed: () {},
-          ),
+        ),
+
+        actions: const [
+          Icon(Icons.search, color: Colors.white),
+          SizedBox(width: 8),
+          Icon(Icons.notifications_none, color: Colors.white),
+          SizedBox(width: 8),
         ],
-        elevation: 0,
       ),
 
-      // ----------------------------------------
-      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // Wajib untuk 5 item
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Beranda',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school_outlined),
-            activeIcon: Icon(Icons.school),
-            label: 'Course',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calculate_outlined),
-            activeIcon: Icon(Icons.calculate),
-            label: 'Sempoa',
-          ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        transitionBuilder: (child, anim) =>
+            FadeTransition(opacity: anim, child: child),
+        child: _widgetOptions.elementAt(_selectedIndex),
+      ),
 
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.green[800], // Sesuaikan dengan tema DuBI
-        unselectedItemColor: Colors.grey[600],
+      bottomNavigationBar: CurvedNavigationBar(
+        index: _selectedIndex,
         onTap: _onItemTapped,
+        backgroundColor: Colors.transparent,
+        color: Colors.lightBlueAccent.shade100,
+        buttonBackgroundColor: Colors.lightBlueAccent.shade200,
+        height: 70,
+        animationDuration: const Duration(milliseconds: 300),
+        items: [
+          _buildNavItem(Icons.home, 'Beranda', _selectedIndex == 0),
+          _buildNavItem(Icons.school, 'Course', _selectedIndex == 1),
+          _buildNavItem(Icons.dashboard, 'Dashboard', _selectedIndex == 2),
+          _buildNavItem(Icons.calculate, 'Sempoa', _selectedIndex == 3),
+          _buildNavItem(Icons.person, 'Profil', _selectedIndex == 4),
+        ],
       ),
     );
   }
