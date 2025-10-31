@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:google_fonts/google_fonts.dart';
+// import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/auth_provider.dart';
 
 // Import layar-layar
@@ -104,7 +104,7 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
         elevation: 0,
         title: Row(
           children: [
-            Icon(Icons.menu_book_rounded, color: Colors.white, size: 32),
+            Icon(Icons.collections_bookmark_outlined, color: Colors.white, size: 40),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,7 +118,7 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
                     letterSpacing: 0.5,
                     shadows: [
                       Shadow(
-                        color: Colors.black.withOpacity(0.15),
+                        color: Colors.black.withValues(alpha: 0.15),
                         offset: const Offset(1, 2),
                         blurRadius: 4,
                       ),
@@ -142,7 +142,7 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF80D8FF), Color(0xFF4FC3F7)],
+              colors: [Color.fromARGB(255, 4, 31, 184), Color.fromARGB(255, 77, 80, 255)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -150,28 +150,35 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
         ),
 
         actions: const [
-          Icon(Icons.search, color: Colors.white),
-          SizedBox(width: 8),
           Icon(Icons.notifications_none, color: Colors.white),
           SizedBox(width: 8),
         ],
       ),
 
       body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 400),
-        transitionBuilder: (child, anim) =>
-            FadeTransition(opacity: anim, child: child),
-        child: _widgetOptions.elementAt(_selectedIndex),
+        duration: const Duration(milliseconds: 500),
+        transitionBuilder: (child, anim) {
+          final offsetAnim = Tween<Offset>(begin: const Offset(0.02, 0), end: Offset.zero).animate(anim);
+          return FadeTransition(
+            opacity: anim,
+            child: SlideTransition(position: offsetAnim, child: child),
+          );
+        },
+        // Penting: beri key unik per tab agar selalu terdeteksi berubah dan animasi jalan
+        child: KeyedSubtree(
+          key: ValueKey<int>(_selectedIndex),
+          child: _widgetOptions.elementAt(_selectedIndex),
+        ),
       ),
 
       bottomNavigationBar: CurvedNavigationBar(
         index: _selectedIndex,
         onTap: _onItemTapped,
         backgroundColor: Colors.transparent,
-        color: Colors.lightBlueAccent.shade100,
-        buttonBackgroundColor: Colors.lightBlueAccent.shade200,
-        height: 70,
-        animationDuration: const Duration(milliseconds: 300),
+        color: Color.fromARGB(255, 4, 31, 184),
+        buttonBackgroundColor: Color.fromARGB(255, 77, 80, 255),
+        height: 55,
+        animationDuration: const Duration(milliseconds: 700),
         items: [
           _buildNavItem(Icons.home, 'Beranda', _selectedIndex == 0),
           _buildNavItem(Icons.school, 'Course', _selectedIndex == 1),

@@ -77,7 +77,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
   @override
   Widget build(BuildContext context) {
   final auth = Provider.of<AuthProvider>(context, listen: false);
-  final String rawName = auth.user?.fullName ?? '';
+  final String rawName = auth.user?.username ?? '';
   final String displayName = rawName.trim().isNotEmpty ? rawName.trim() : 'Pengguna';
 
     return Scaffold(
@@ -125,36 +125,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 Text(
                   'Ayo belajar dengan senang hati',
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                ),
-
-                // Aksi Cepat
-                const SizedBox(height: 16),
-                const Text('Aksi Cepat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _QuickActionCard(
-                        icon: Icons.calculate,
-                        iconBg: const Color(0xFFF1E8FF),
-                        iconColor: const Color(0xFF7A5CFF),
-                        title: 'Sempoa',
-                        subtitle: 'Mainkan',
-                        onTap: () => MainContainerScreen.switchTo(context, 3),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _QuickActionCard(
-                        icon: Icons.insights_outlined,
-                        iconBg: const Color(0xFFEAF8EF),
-                        iconColor: const Color(0xFF2DBE66),
-                        title: 'Dashboard',
-                        subtitle: 'Lihat progress',
-                        onTap: () => MainContainerScreen.switchTo(context, 2),
-                      ),
-                    ),
-                  ],
                 ),
 
                 _buildSectionTitle('Pilih Jenjang Pendidikan'),
@@ -206,6 +176,64 @@ class _BrowseScreenState extends State<BrowseScreen> {
                         ),
                       );
                     });
+                  },
+                ),
+
+                // Aksi Cepat
+                const SizedBox(height: 16),
+                const Text('Aksi Cepat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 12),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 370;
+                  if (isCompact) {
+                    return Column(
+                    children: [
+                      _QuickActionCard(
+                      icon: Icons.calculate,
+                      iconBg: const Color(0xFFF1E8FF),
+                      iconColor: const Color(0xFF7A5CFF),
+                      title: 'Sempoa',
+                      subtitle: 'Mainkan',
+                      onTap: () => MainContainerScreen.switchTo(context, 3),
+                      ),
+                      const SizedBox(height: 12),
+                      _QuickActionCard(
+                      icon: Icons.insights_outlined,
+                      iconBg: const Color(0xFFEAF8EF),
+                      iconColor: const Color(0xFF2DBE66),
+                      title: 'Dashboard',
+                      subtitle: 'Lihat progress',
+                      onTap: () => MainContainerScreen.switchTo(context, 2),
+                      ),
+                    ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                    Expanded(
+                      child: _QuickActionCard(
+                      icon: Icons.calculate,
+                      iconBg: const Color(0xFFF1E8FF),
+                      iconColor: const Color(0xFF7A5CFF),
+                      title: 'Sempoa',
+                      subtitle: 'Mainkan',
+                      onTap: () => MainContainerScreen.switchTo(context, 3),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _QuickActionCard(
+                      icon: Icons.insights_outlined,
+                      iconBg: const Color(0xFFEAF8EF),
+                      iconColor: const Color(0xFF2DBE66),
+                      title: 'Dashboard',
+                      subtitle: 'Lihat progress',
+                      onTap: () => MainContainerScreen.switchTo(context, 2),
+                      ),
+                    ),
+                    ],
+                  );
                   },
                 ),
               ],

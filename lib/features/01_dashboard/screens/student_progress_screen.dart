@@ -56,21 +56,77 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                 
                 // 2. Statistik Pembelajaran
                 _buildSectionTitle('Statistik Pembelajaran'),
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  // [PERBAIKAN] Sesuaikan rasio agar lebih lebar (Horizontal)
-                  childAspectRatio: 2,
-                  children: [
-                    _buildStatCard('Course Selesai', stats.coursesCompleted.toString(), Icons.check_circle_outline, Colors.green),
-                    _buildStatCard('Kuis Lulus', stats.quizzesPassed.toString(), Icons.emoji_events_outlined, Colors.purple),
-                    _buildStatCard('Streak Terpanjang', '0 hari', Icons.local_fire_department_outlined, Colors.orange), // Placeholder
-                    _buildStatCard('Favorit', 'Bahasa', Icons.star_outline, Colors.blue), // Placeholder
-                  ],
-                ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final double rawScale = width / 400;
+                    final double textScale = rawScale.clamp(0.75, 1.0).toDouble();
+                    final mediaQuery = MediaQuery.of(context);
+
+                    Widget wrapCard(Widget card) => MediaQuery(
+                      data: mediaQuery.copyWith(textScaleFactor: textScale),
+                      child: card,
+                      );
+
+                    final cards = <Widget>[
+                    wrapCard(
+                      _buildStatCard(
+                      'Course Selesai',
+                      stats.coursesCompleted.toString(),
+                      Icons.check_circle_outline,
+                      Colors.green,
+                      ),
+                    ),
+                    wrapCard(
+                      _buildStatCard(
+                      'Kuis Lulus',
+                      stats.quizzesPassed.toString(),
+                      Icons.emoji_events_outlined,
+                      Colors.purple,
+                      ),
+                    ),
+                    wrapCard(
+                      _buildStatCard(
+                      'Streak Terpanjang',
+                      '0 hari',
+                      Icons.local_fire_department_outlined,
+                      Colors.orange,
+                      ),
+                    ),
+                    wrapCard(
+                      _buildStatCard(
+                      'Favorit',
+                      'Bahasa',
+                      Icons.star_outline,
+                      Colors.blue,
+                      ),
+                    ),
+                    ];
+
+                    if (width >= 900) {
+                    return Row(
+                      children: [
+                      for (var i = 0; i < cards.length; i++) ...[
+                        if (i != 0) const SizedBox(width: 12),
+                        Expanded(child: cards[i]),
+                      ],
+                      ],
+                    );
+                    }
+
+                    const spacing = 12.0;
+                    final childWidth = (width - spacing) / 2;
+
+                    return Wrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: [
+                      for (final card in cards)
+                      SizedBox(width: childWidth, child: card),
+                    ],
+                    );
+                    },
+                  ),
                 
                 // 3. Progres Kursus Kamu
                 _buildSectionTitle('Progres Kursus Kamu'),

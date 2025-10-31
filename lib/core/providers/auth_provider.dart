@@ -93,6 +93,45 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// [PUBLIC] Refresh data user dari server agar halaman Profile bisa pull-to-refresh
+  Future<void> refreshUser() async {
+    try {
+      // Coba endpoint umum '/me' lebih dulu
+      final res = await _dio.get('/me');
+      final data = res.data;
+      User parsed;
+      if (data is Map && data['user'] != null) {
+        parsed = User.fromJson(data['user']);
+      } else {
+        parsed = User.fromJson(data);
+      }
+      _user = parsed;
+      await _storage.write(key: 'userData', value: jsonEncode(_user!.toJson()));
+      notifyListeners();
+      return;
+    } on DioException catch (_) {
+      // Jika '/me' tidak ada, coba '/user'
+      try {
+        final res2 = await _dio.get('/user');
+        final data2 = res2.data;
+        User parsed2;
+        if (data2 is Map && data2['user'] != null) {
+          parsed2 = User.fromJson(data2['user']);
+        } else {
+          parsed2 = User.fromJson(data2);
+        }
+        _user = parsed2;
+        await _storage.write(key: 'userData', value: jsonEncode(_user!.toJson()));
+        notifyListeners();
+      } catch (e) {
+        // Diamkan (backend mungkin tidak menyediakan endpoint ini)
+        print('refreshUser fallback error: $e');
+      }
+    } catch (e) {
+      print('refreshUser error: $e');
+    }
+  }
+
   /// [PUBLIC] Handle Registrasi User Baru
   Future<String> register({
     required String fullName,

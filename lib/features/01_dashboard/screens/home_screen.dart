@@ -40,7 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final role = auth.user?.role ?? 'student';
     final userLevelId = auth.user?.levelId;
-    _isLockedToLevel = role == 'student' && userLevelId != null; // Umum has null level_id
+    _isLockedToLevel =
+        role == 'student' && userLevelId != null; // Umum has null level_id
     _lockedLevelId = _isLockedToLevel ? userLevelId : null;
     if (_isLockedToLevel) {
       _selectedLevelId = _lockedLevelId; // force filter
@@ -72,7 +73,11 @@ class _HomeScreenState extends State<HomeScreen> {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
-                  child: Text('Belum ada kursus.', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.grey[600])),
+                  child: Text(
+                    'Belum ada kursus.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                  ),
                 ),
               );
             }
@@ -86,14 +91,22 @@ class _HomeScreenState extends State<HomeScreen> {
               if (c.level != null) levelMap[c.level!.levelId] = c.level!;
               subjectMap[c.subject.subjectId] = c.subject;
             }
-            final levels = levelMap.values.toList()..sort((a, b) => a.levelName.compareTo(b.levelName));
-            final subjects = subjectMap.values.toList()..sort((a, b) => a.subjectName.compareTo(b.subjectName));
+            final levels = levelMap.values.toList()
+              ..sort((a, b) => a.levelName.compareTo(b.levelName));
+            final subjects = subjectMap.values.toList()
+              ..sort((a, b) => a.subjectName.compareTo(b.subjectName));
 
             // Apply filters and search
             final filtered = courses.where((c) {
-              final matchLevel = _selectedLevelId == null || (c.level?.levelId == _selectedLevelId);
-              final matchSubject = _selectedSubjectId == null || c.subject.subjectId == _selectedSubjectId;
-              final matchSearch = _search.isEmpty || c.title.toLowerCase().contains(_search.toLowerCase());
+              final matchLevel =
+                  _selectedLevelId == null ||
+                  (c.level?.levelId == _selectedLevelId);
+              final matchSubject =
+                  _selectedSubjectId == null ||
+                  c.subject.subjectId == _selectedSubjectId;
+              final matchSearch =
+                  _search.isEmpty ||
+                  c.title.toLowerCase().contains(_search.toLowerCase());
               return matchLevel && matchSubject && matchSearch;
             }).toList();
 
@@ -101,41 +114,72 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 // Header + Search
-                Row(
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const Text(
-                            'Semua Course',
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                          ),
-                          const SizedBox(width: 8),
-                          if (_isLockedToLevel)
-                            _LevelBadge(
-                              text: levels.firstWhere(
-                                    (l) => l.levelId == _lockedLevelId,
-                                    orElse: () => Level(levelId: -1, levelName: '', courses: const []),
-                                  ).levelName,
-                            ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      width: 160,
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (v) => setState(() => _search = v),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          prefixIcon: const Icon(Icons.search),
-                          hintText: 'Cari',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 420;
+                  final lockedLevelName = _isLockedToLevel
+                    ? levels
+                      .firstWhere(
+                        (l) => l.levelId == _lockedLevelId,
+                        orElse: () => Level(
+                        levelId: -1,
+                        levelName: '',
+                        courses: const [],
                         ),
+                      )
+                      .levelName
+                    : '';
+                  final header = Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                    const Text(
+                      'Semua Course',
+                      style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ],
+                    if (_isLockedToLevel && lockedLevelName.isNotEmpty)
+                      _LevelBadge(text: lockedLevelName),
+                    ],
+                  );
+                  final searchField = SizedBox(
+                    width: isNarrow ? double.infinity : 220,
+                    child: TextField(
+                    controller: _searchController,
+                    onChanged: (v) => setState(() => _search = v),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: 'Cari',
+                      border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
+                      ),
+                    ),
+                    ),
+                  );
+                  if (isNarrow) {
+                    return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      header,
+                      const SizedBox(height: 12),
+                      searchField,
+                    ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                    Expanded(child: header),
+                    searchField,
+                    ],
+                  );
+                  },
                 ),
 
                 const SizedBox(height: 12),
@@ -145,20 +189,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   _FilterSection(
                     title: '',
                     chips: [
-                      FilterChipData(label: 'Semua', selected: _selectedLevelId == null, onSelected: () => setState(() => _selectedLevelId = null)),
-                      ...['TK', 'SD', 'SMP', 'SMA']
-                          .map((name) {
-                            final lvl = levels.firstWhere(
-                              (l) => l.levelName.toUpperCase() == name,
-                              orElse: () => Level(levelId: -1, levelName: name, courses: const []),
-                            );
-                            final selected = _selectedLevelId != null && _selectedLevelId == lvl.levelId;
-                            return FilterChipData(
-                              label: name,
-                              selected: selected,
-                              onSelected: () => setState(() => _selectedLevelId = lvl.levelId == -1 ? null : lvl.levelId),
-                            );
-                          }),
+                      FilterChipData(
+                        label: 'Semua',
+                        selected: _selectedLevelId == null,
+                        onSelected: () =>
+                            setState(() => _selectedLevelId = null),
+                      ),
+                      ...['TK', 'SD', 'SMP', 'SMA'].map((name) {
+                        final lvl = levels.firstWhere(
+                          (l) => l.levelName.toUpperCase() == name,
+                          orElse: () => Level(
+                            levelId: -1,
+                            levelName: name,
+                            courses: const [],
+                          ),
+                        );
+                        final selected =
+                            _selectedLevelId != null &&
+                            _selectedLevelId == lvl.levelId;
+                        return FilterChipData(
+                          label: name,
+                          selected: selected,
+                          onSelected: () => setState(
+                            () => _selectedLevelId = lvl.levelId == -1
+                                ? null
+                                : lvl.levelId,
+                          ),
+                        );
+                      }),
                     ],
                   ),
 
@@ -168,37 +226,48 @@ class _HomeScreenState extends State<HomeScreen> {
                 _FilterSection(
                   title: '',
                   chips: [
-                    FilterChipData(label: 'Semua', selected: _selectedSubjectId == null, onSelected: () => setState(() => _selectedSubjectId = null)),
-          ...subjects
-            .map((s) => FilterChipData(
-                              label: s.subjectName,
-                              selected: _selectedSubjectId == s.subjectId,
-                              onSelected: () => setState(() => _selectedSubjectId = s.subjectId),
-              )),
+                    FilterChipData(
+                      label: 'Semua',
+                      selected: _selectedSubjectId == null,
+                      onSelected: () =>
+                          setState(() => _selectedSubjectId = null),
+                    ),
+                    ...subjects.map(
+                      (s) => FilterChipData(
+                        label: s.subjectName,
+                        selected: _selectedSubjectId == s.subjectId,
+                        onSelected: () =>
+                            setState(() => _selectedSubjectId = s.subjectId),
+                      ),
+                    ),
                   ],
                 ),
 
                 const SizedBox(height: 12),
 
-                ...filtered.map((c) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: CourseCardItem(
-                        course: c,
-                        levelTag: c.level?.levelName,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CourseDetailScreen(course: c),
-                            ),
-                          );
-                        },
-                      ),
-                    )),
+                ...filtered.map(
+                  (c) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: CourseCardItem(
+                      course: c,
+                      levelTag: c.level?.levelName,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CourseDetailScreen(course: c),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
                 if (filtered.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(24.0),
-                    child: Center(child: Text('Tidak ada kursus dengan filter saat ini.')),
+                    child: Center(
+                      child: Text('Tidak ada kursus dengan filter saat ini.'),
+                    ),
                   ),
               ],
             );
@@ -229,7 +298,10 @@ class _LevelBadge extends StatelessWidget {
           color: Colors.black.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
@@ -239,7 +311,11 @@ class FilterChipData {
   final String label;
   final bool selected;
   final VoidCallback onSelected;
-  FilterChipData({required this.label, required this.selected, required this.onSelected});
+  FilterChipData({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
 }
 
 class _FilterSection extends StatelessWidget {
@@ -260,14 +336,16 @@ class _FilterSection extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              ...chips.map((d) => Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: ChoiceChip(
-                      label: Text(d.label),
-                      selected: d.selected,
-                      onSelected: (_) => d.onSelected(),
-                    ),
-                  )),
+              ...chips.map(
+                (d) => Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(d.label),
+                    selected: d.selected,
+                    onSelected: (_) => d.onSelected(),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

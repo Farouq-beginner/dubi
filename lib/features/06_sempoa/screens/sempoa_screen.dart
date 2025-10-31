@@ -60,8 +60,16 @@ class _SempoaScreenState extends State<SempoaScreen> {
 
           final progress = snapshot.data!;
 
-          return ListView(
-            padding: const EdgeInsets.all(16.0),
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _progressFuture = _dataService.fetchSempoaProgress();
+              });
+              await _progressFuture;
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16.0),
             children: [
               // Header (Sesuai gambar)
               Row(
@@ -252,7 +260,8 @@ class _SempoaScreenState extends State<SempoaScreen> {
                   ),
                 ),
               ),
-            ],
+              ],
+            ),
           );
         },
       ),

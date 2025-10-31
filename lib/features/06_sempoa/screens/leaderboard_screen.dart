@@ -107,32 +107,78 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       ),
                     ],
                   ),
-                  child: ListTile(
+                    child: ListTile(
                     contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     leading: CircleAvatar(
                       radius: 20,
                       backgroundColor: isTop3 ? color : Colors.green.shade100,
                       child: Text(
-                        '$rank',
-                        style: TextStyle(
-                          color: isTop3 ? Colors.black : Colors.green.shade900,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      '$rank',
+                      style: TextStyle(
+                        color: isTop3 ? Colors.black : Colors.green.shade900,
+                        fontWeight: FontWeight.bold,
+                      ),
                       ),
                     ),
-                    title: Text(
-                      item.userName,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Row(
+                    title: Row(
                       children: [
-                        _StatChip(icon: Icons.star, label: 'Level', value: '${item.highestLevel}'),
-                        const SizedBox(width: 8),
-                        _StatChip(icon: Icons.bolt, label: 'Skor', value: '${item.highScore}'),
-                        const SizedBox(width: 8),
-                        _StatChip(icon: Icons.local_fire_department, label: 'Streak', value: '${item.highestStreak}'),
+                      Expanded(
+                        child: Text(
+                        item.userName,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                        overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       ],
+                    ),
+                    subtitle: LayoutBuilder(
+                      builder: (context, constraints) {
+                      // divide available width so each chip can shrink when needed
+                      final maxChipWidth = (constraints.maxWidth - 32) / 3;
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: maxChipWidth),
+                          child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: _StatChip(
+                            icon: Icons.star,
+                            label: 'Level',
+                            value: '${item.highestLevel}',
+                          ),
+                          ),
+                        ),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: maxChipWidth),
+                          child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: _StatChip(
+                            icon: Icons.bolt,
+                            label: 'Skor',
+                            value: '${item.highScore}',
+                          ),
+                          ),
+                        ),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: maxChipWidth),
+                          child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: _StatChip(
+                            icon: Icons.local_fire_department,
+                            label: 'Streak',
+                            value: '${item.highestStreak}',
+                          ),
+                          ),
+                        ),
+                        ],
+                      );
+                      },
                     ),
                   ),
                 );
