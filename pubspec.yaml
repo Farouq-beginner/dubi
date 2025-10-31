@@ -95,7 +95,8 @@ flutter:
     - assets/images/icon_matematika.png
     - assets/images/icon_sempoa.png
     - assets/images/icon_bahasa.png
-
+    - assets/images/icon_navsempoa.png
+    
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

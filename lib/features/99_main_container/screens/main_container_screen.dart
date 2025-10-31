@@ -64,7 +64,7 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
   }
 
   // 🔧 Item ikon + teks + animasi bounce
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
+  Widget _buildNavItem(dynamic icon, String label, bool isActive) {
     final color = isActive ? Colors.white : Colors.white70;
 
     return Column(
@@ -75,9 +75,13 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
             ? BounceInDown(
                 duration: const Duration(milliseconds: 400),
                 from: 8,
-                child: Icon(icon, size: 28, color: color),
+                child: icon is IconData
+                    ? Icon(icon, size: 28, color: color)
+                    : SizedBox(width: 28, height: 28, child: icon),
               )
-            : Icon(icon, size: 26, color: color),
+            : icon is IconData
+            ? Icon(icon, size: 26, color: color)
+            : SizedBox(width: 26, height: 26, child: icon),
         // Hide label if active (in page)
         if (!isActive) ...[
           const SizedBox(height: 4),
@@ -104,7 +108,11 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
         elevation: 0,
         title: Row(
           children: [
-            Icon(Icons.collections_bookmark_outlined, color: Colors.white, size: 40),
+            Icon(
+              Icons.collections_bookmark_outlined,
+              color: Colors.white,
+              size: 40,
+            ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +150,10 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color.fromARGB(255, 4, 31, 184), Color.fromARGB(255, 77, 80, 255)],
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -158,7 +169,10 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 500),
         transitionBuilder: (child, anim) {
-          final offsetAnim = Tween<Offset>(begin: const Offset(0.02, 0), end: Offset.zero).animate(anim);
+          final offsetAnim = Tween<Offset>(
+            begin: const Offset(0.02, 0),
+            end: Offset.zero,
+          ).animate(anim);
           return FadeTransition(
             opacity: anim,
             child: SlideTransition(position: offsetAnim, child: child),
@@ -183,7 +197,11 @@ class _MainContainerScreenState extends State<MainContainerScreen> {
           _buildNavItem(Icons.home, 'Beranda', _selectedIndex == 0),
           _buildNavItem(Icons.school, 'Course', _selectedIndex == 1),
           _buildNavItem(Icons.dashboard, 'Dashboard', _selectedIndex == 2),
-          _buildNavItem(Icons.calculate, 'Sempoa', _selectedIndex == 3),
+          _buildNavItem(
+            Image.asset('assets/images/icon_navsempoa.png'),
+            'Sempoa',
+            _selectedIndex == 3,
+          ),
           _buildNavItem(Icons.person, 'Profil', _selectedIndex == 4),
         ],
       ),
