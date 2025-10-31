@@ -1,8 +1,11 @@
-// screens/login_screen.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
-import 'register_screen.dart'; // Untuk navigasi
+import 'register_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,18 +19,103 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _updateRequired = false; // 🔒 jika true, login dikunci
 
+  @override
+  void initState() {
+    super.initState();
+    _checkAppUpdate();
+  }
+
+  // 🔍 Cek versi ke API Laravel
+  Future<void> _checkAppUpdate() async {
+    try {
+      print('🔍 Memeriksa update...');
+      final packageInfo = await PackageInfo.fromPlatform();
+      int currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
+
+      final response = await http.get(Uri.parse(
+        'https://dubibackend-production.up.railway.app/api/check-update?build_number=$currentBuild',
+      ));
+
+      print('📥 Status: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('📦 Body: $data');
+
+        int latestBuild = int.tryParse(data['latest_build'].toString()) ?? 1;
+        bool forceUpdate = data['update_required'] ?? false;
+        String downloadUrl = data['download_url'] ?? '';
+        String changelog = data['changelog'] ?? '';
+
+        print('📱 Current build: $currentBuild | 🔄 Latest build: $latestBuild');
+
+        if (forceUpdate && latestBuild > currentBuild) {
+          setState(() => _updateRequired = true);
+
+          // 🔒 tampilkan dialog wajib update (tidak bisa ditutup)
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showForceUpdateDialog(downloadUrl, changelog);
+          });
+        } else {
+          print('✅ Aplikasi sudah versi terbaru.');
+        }
+      } else {
+        print('⚠️ Gagal cek update.');
+      }
+    } catch (e) {
+      print('❌ Error cek update: $e');
+    }
+  }
+
+  void _showForceUpdateDialog(String url, String changelog) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // ❌ tidak bisa ditutup manual
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // ❌ tidak bisa tekan back
+        child: AlertDialog(
+          title: const Text(
+            '⚠️ Pembaruan Diperlukan',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+          ),
+          content: Text(changelog),
+          actions: [
+            ElevatedButton.icon(
+              onPressed: () async {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+              icon: const Icon(Icons.download, color: Colors.white),
+              label: const Text('Unduh Sekarang', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🔑 Login
   Future<void> _handleLogin() async {
+    if (_updateRequired) {
+      // 🚫 Blokir login jika update wajib
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Silakan perbarui aplikasi ke versi terbaru untuk melanjutkan.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      // Panggil provider untuk login
-      await Provider.of<AuthProvider>(
-        context,
-        listen: false,
-      ).login(_emailController.text, _passwordController.text);
-      // (AuthCheckScreen akan otomatis pindah halaman)
+      await Provider.of<AuthProvider>(context, listen: false)
+          .login(_emailController.text, _passwordController.text);
     } catch (e) {
-      // Tampilkan error jika login gagal
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
       );
@@ -47,10 +135,9 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Ilustrasi/Logo (Contoh)
                 Icon(Icons.school, size: 100, color: Colors.blue),
-                SizedBox(height: 16),
-                Text(
+                const SizedBox(height: 16),
+                const Text(
                   'Selamat Datang!',
                   style: TextStyle(
                     fontSize: 32,
@@ -58,24 +145,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Colors.blue,
                   ),
                 ),
-                Text(
+                const Text(
                   'Masuk untuk mulai belajar',
                   style: TextStyle(fontSize: 18, color: Colors.black54),
                 ),
-                SizedBox(height: 40),
+                const SizedBox(height: 40),
 
-                // Form Email
                 TextField(
                   controller: _emailController,
                   decoration: _buildInputDecoration('Email kamu'),
                   keyboardType: TextInputType.emailAddress,
+                  enabled: !_updateRequired, // ❌ nonaktifkan input jika wajib update
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                // Form Password
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  enabled: !_updateRequired,
                   decoration: _buildInputDecoration('Password kamu').copyWith(
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -92,37 +179,38 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-                // Tombol Login
                 if (_isLoading)
-                  CircularProgressIndicator()
+                  const CircularProgressIndicator()
                 else
                   ElevatedButton(
-                    onPressed: _handleLogin,
+                    onPressed: _updateRequired ? null : _handleLogin, // 🚫 tidak aktif saat wajib update
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      minimumSize: Size(double.infinity, 50),
+                      backgroundColor:
+                          _updateRequired ? Colors.grey : Colors.blue,
+                      minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
                     ),
-                    child: Text(
+                    child: const Text(
                       'MASUK',
                       style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
                   ),
 
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-                // Link ke Register
                 TextButton(
-                  onPressed: () {
-                    Navigator.of(
-                      context,
-                    ).push(MaterialPageRoute(builder: (_) => RegisterScreen()));
-                  },
-                  child: Text(
+                  onPressed: _updateRequired
+                      ? null
+                      : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                          );
+                        },
+                  child: const Text(
                     'Belum punya akun? Daftar di sini',
                     style: TextStyle(color: Colors.blue, fontSize: 16),
                   ),
@@ -135,7 +223,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Helper untuk dekorasi input
   InputDecoration _buildInputDecoration(String label) {
     return InputDecoration(
       labelText: label,
