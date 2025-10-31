@@ -78,11 +78,21 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  
   assets:
     - assets/logo.png
     - assets/images/app_icon.png
-
+    - assets/images/icon_tk.png
+    - assets/images/icon_sd.png
+    - assets/images/icon_smp.png
+    - assets/images/icon_sma.png
+    - assets/images/icon_default.png
+    - assets/images/icon_umum.png
+    - assets/images/icon_fisika.png
+    - assets/images/icon_b.indo.png
+    - assets/images/icon_b.inggris.png
+    - assets/images/icon_matematika.png
+    - assets/images/icon_sempoa.png
+    - assets/images/icon_bahasa.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

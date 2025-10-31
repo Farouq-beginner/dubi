@@ -351,10 +351,9 @@ class _BrowseScreenState extends State<BrowseScreen>
                     if (isCompact) {
                       return Column(
                         children: [
-                          _QuickActionCard(
-                            icon: Icons.calculate,
+                          _QuickActionCardWithImage(
+                            imagePath: 'assets/images/icon_sempoa.png',
                             iconBg: const Color(0xFFF1E8FF),
-                            iconColor: const Color(0xFF7A5CFF),
                             title: 'Sempoa',
                             subtitle: 'Mainkan',
                             onTap: () =>
@@ -377,7 +376,7 @@ class _BrowseScreenState extends State<BrowseScreen>
                       children: [
                         Expanded(
                           child: _QuickActionCard(
-                            icon: Icons.calculate,
+                            imagePath: 'assets/images/icon_sempoa.png',
                             iconBg: const Color(0xFFF1E8FF),
                             iconColor: const Color(0xFF7A5CFF),
                             title: 'Sempoa',
@@ -435,41 +434,39 @@ class _LevelTile extends StatelessWidget {
     }
   }
 
-  static (IconData, Color, Color) _style(String name) {
-    // returns (icon, bubbleColor, iconColor)
+  static (Widget, Color) _style(String name) {
     switch (name.toUpperCase()) {
       case 'TK':
         return (
-          Icons.tag_faces,
+          Image.asset('assets/images/icon_tk.png', width: 48, height: 48),
           const Color(0xFFFFE6EF),
-          const Color(0xFFFF5C8A),
         );
       case 'SD':
         return (
-          Icons.school_outlined,
-          const Color(0xFFE7F0FF),
-          const Color(0xFF3D7CFF),
+          Image.asset('assets/images/icon_sd.png', width: 48, height: 48),
+          const Color(0xFFFFE6EF),
         );
       case 'SMP':
-        return (Icons.school, const Color(0xFFEAF8EF), const Color(0xFF3CCB6A));
+        return (
+          Image.asset('assets/images/icon_smp.png', width: 48, height: 48),
+          const Color(0xFFFFE6EF),
+        );
       case 'SMA':
         return (
-          Icons.apartment_outlined,
-          const Color(0xFFF0E9FF),
-          const Color(0xFF8A63FF),
+          Image.asset('assets/images/icon_sma.png', width: 48, height: 48),
+          const Color(0xFFFFE6EF),
         );
       default:
         return (
-          Icons.category,
-          const Color(0xFFF1F3F5),
-          const Color(0xFF6B7280),
+          Image.asset('assets/images/icon_default.png', width: 48, height: 48),
+          const Color(0xFFFFE6EF),
         );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final (icon, bubble, accent) = _style(level.levelName);
+    final (iconWidget, bubble) = _style(level.levelName);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -491,13 +488,13 @@ class _LevelTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 54,
-              height: 54,
+              width: 70,
+              height: 70,
               decoration: BoxDecoration(
                 color: bubble,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(icon, color: accent, size: 28),
+              child: Center(child: iconWidget),
             ),
             const SizedBox(height: 10),
             Text(
@@ -521,35 +518,28 @@ class _SubjectTile extends StatelessWidget {
   final VoidCallback onTap;
   const _SubjectTile({required this.subject, required this.onTap});
 
-  static (IconData, Color, Color) _style(String name) {
-    // returns (icon, bubbleColor, iconColor)
-    if (name.contains('Indonesia'))
-      return (
-        Icons.translate,
-        const Color(0xFFFFEFEF),
-        const Color(0xFFFF6B6B),
-      );
-    if (name.contains('Inggris'))
-      return (Icons.public, const Color(0xFFEAF2FF), const Color(0xFF3D7CFF));
-    if (name.contains('Matematika'))
-      return (
-        Icons.calculate,
-        const Color(0xFFEFFAF3),
-        const Color(0xFF2DBE66),
-      );
-    if (name.contains('Sempoa'))
-      return (
-        Icons.grid_view_rounded,
-        const Color(0xFFF4EFFF),
-        const Color(0xFF8A63FF),
-      );
-    return (Icons.menu_book, const Color(0xFFF1F3F5), const Color(0xFF6B7280));
+  // Fungsi menentukan gambar dan warna latar
+  static (String, Color) _style(String name) {
+    if (name.contains('Indonesia')) {
+      return ('assets/images/icon_b.indo.png', const Color(0xFFFFEFEF));
+    }
+    if (name.contains('Inggris')) {
+      return ('assets/images/icon_b.inggris.png', const Color(0xFFEAF2FF));
+    }
+    if (name.contains('Matematika')) {
+      return ('assets/images/icon_matematika.png', const Color(0xFFEFFAF3));
+    }
+    if (name.contains('Sempoa')) {
+      return ('assets/images/icon_sempoa.png', const Color(0xFFF4EFFF));
+    }
+    return ('assets/images/icon_default.png', const Color(0xFFF1F3F5));
   }
 
   @override
   Widget build(BuildContext context) {
-    final (icon, bubble, accent) = _style(subject.subjectName);
+    final (imagePath, bubbleColor) = _style(subject.subjectName);
     final isSempoa = subject.subjectName.toLowerCase().contains('sempoa');
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -574,10 +564,13 @@ class _SubjectTile extends StatelessWidget {
               width: 54,
               height: 54,
               decoration: BoxDecoration(
-                color: bubble,
+                color: bubbleColor,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(icon, color: accent, size: 28),
+              child: Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: Image.asset(imagePath, fit: BoxFit.contain),
+              ),
             ),
             const SizedBox(height: 10),
             Text(
@@ -615,14 +608,16 @@ class _SubjectTile extends StatelessWidget {
 
 // ---------------------------- Quick Action Card ----------------------------
 class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final String? imagePath;
   final Color iconBg;
   final Color iconColor;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
   const _QuickActionCard({
-    required this.icon,
+    this.icon,
+    this.imagePath,
     required this.iconBg,
     required this.iconColor,
     required this.title,
@@ -658,7 +653,85 @@ class _QuickActionCard extends StatelessWidget {
                 color: iconBg,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: iconColor),
+              child: imagePath != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: Image.asset(imagePath!, fit: BoxFit.contain),
+                    )
+                  : Icon(icon!, color: iconColor),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionCardWithImage extends StatelessWidget {
+  final String imagePath;
+  final Color iconBg;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _QuickActionCardWithImage({
+    required this.imagePath,
+    required this.iconBg,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: Image.asset(imagePath, fit: BoxFit.contain),
+              ),
             ),
             const SizedBox(width: 12),
             Column(
