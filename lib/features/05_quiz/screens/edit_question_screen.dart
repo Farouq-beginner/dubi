@@ -11,13 +11,17 @@ class AnswerOption {
 
   // 2. Inisialisasi controller di dalam constructor
   AnswerOption({String text = '', this.isCorrect = false, this.answerId})
-      : controller = TextEditingController(text: text); // <-- 3. Set text di sini
+    : controller = TextEditingController(text: text); // <-- 3. Set text di sini
 }
 
 class EditQuestionScreen extends StatefulWidget {
   final int quizId;
   final Question question; // Kita terima data pertanyaan yang akan diedit
-  const EditQuestionScreen({Key? key, required this.quizId, required this.question}) : super(key: key);
+  const EditQuestionScreen({
+    Key? key,
+    required this.quizId,
+    required this.question,
+  }) : super(key: key);
 
   @override
   _EditQuestionScreenState createState() => _EditQuestionScreenState();
@@ -33,12 +37,15 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
   void initState() {
     super.initState();
     // Isi form dengan data yang ada
-    _questionController = TextEditingController(text: widget.question.questionText);
-// --- [PERBAIKI BLOK INI] ---
+    _questionController = TextEditingController(
+      text: widget.question.questionText,
+    );
+    // --- [PERBAIKI BLOK INI] ---
     _answerOptions = widget.question.answers.map((answer) {
       return AnswerOption(
         text: answer.answerText, // <-- Sekarang ini akan mengisi teks
-        isCorrect: answer.isCorrect ?? false, // <-- Ambil 'isCorrect' dari API Guru
+        isCorrect:
+            answer.isCorrect ?? false, // <-- Ambil 'isCorrect' dari API Guru
         answerId: answer.answerId,
       );
     }).toList();
@@ -46,7 +53,9 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
 
   void _addAnswerOption() {
     setState(() {
-      _answerOptions.add(AnswerOption()); // Menambah jawaban baru (tanpa answerId)
+      _answerOptions.add(
+        AnswerOption(),
+      ); // Menambah jawaban baru (tanpa answerId)
     });
   }
 
@@ -58,17 +67,22 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
 
   Future<void> _submitQuestion() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     int correctCount = 0;
     List<Map<String, dynamic>> answersPayload = [];
-    
+
     for (var option in _answerOptions) {
       if (option.controller.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Semua pilihan jawaban harus diisi!'), backgroundColor: Colors.orange));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Semua pilihan jawaban harus diisi!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
         return;
       }
       if (option.isCorrect) correctCount++;
-      
+
       answersPayload.add({
         'answer_id': option.answerId, // Kirim ID jika ada (untuk update)
         'answer_text': option.controller.text,
@@ -77,7 +91,12 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
     }
 
     if (correctCount == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tandai minimal satu jawaban yang benar!'), backgroundColor: Colors.orange));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Tandai minimal satu jawaban yang benar!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
       return;
     }
 
@@ -95,10 +114,11 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pop(true); // Kirim 'true' tanda sukses
-
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -110,8 +130,22 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit Pertanyaan'),
-        backgroundColor: Colors.deepPurple,
+        title: Text('Edit Pertanyaan', style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: Form(
         key: _formKey,
@@ -119,28 +153,38 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
           padding: EdgeInsets.all(24),
           children: [
             // --- Pertanyaan ---
-            Text('Pertanyaan:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Pertanyaan:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             SizedBox(height: 8),
             TextFormField(
               controller: _questionController,
               decoration: _buildInputDecoration('Tulis pertanyaan di sini...'),
               maxLines: 4,
-              validator: (val) => val!.isEmpty ? 'Pertanyaan tidak boleh kosong' : null,
+              validator: (val) =>
+                  val!.isEmpty ? 'Pertanyaan tidak boleh kosong' : null,
             ),
             SizedBox(height: 24),
 
             // --- Pilihan Jawaban ---
-            Text('Pilihan Jawaban:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Pilihan Jawaban:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             SizedBox(height: 8),
-            
+
             ..._buildAnswerFields(),
-            
+
             TextButton.icon(
               icon: Icon(Icons.add_circle_outline, color: Colors.green),
-              label: Text('Tambah Pilihan Jawaban', style: TextStyle(color: Colors.green)),
+              label: Text(
+                'Tambah Pilihan Jawaban',
+                style: TextStyle(color: Colors.green),
+              ),
               onPressed: _addAnswerOption,
             ),
-            
+
             SizedBox(height: 32),
 
             ElevatedButton(
@@ -151,7 +195,10 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
               ),
               child: _isLoading
                   ? CircularProgressIndicator(color: Colors.white)
-                  : Text('SIMPAN PERUBAHAN', style: TextStyle(color: Colors.white, fontSize: 16)),
+                  : Text(
+                      'SIMPAN PERUBAHAN',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
             ),
           ],
         ),
@@ -186,7 +233,7 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
             IconButton(
               icon: Icon(Icons.remove_circle, color: Colors.red[300]),
               onPressed: () => _removeAnswerOption(idx),
-            )
+            ),
           ],
         ),
       );

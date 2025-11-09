@@ -62,7 +62,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   int get courseId => widget.course.courseId;
   @override
   DataService get dataService => _dataService;
-  
+
   @override
   Future<void> refreshData() => _refreshData();
 
@@ -76,10 +76,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
     _dataService = DataService(context);
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
-  _isOwner =
-    (auth.user?.userId == widget.course.createdByUserId) &&
-    (auth.user?.role == 'teacher');
-  _isAdmin = (auth.user?.role == 'admin');
+    _isOwner =
+        (auth.user?.userId == widget.course.createdByUserId) &&
+        (auth.user?.role == 'teacher');
+    _isAdmin = (auth.user?.role == 'admin');
 
     _refreshData();
   }
@@ -131,26 +131,29 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                 ],
               )
             : _isAdmin
-                ? PopupMenuButton<String>(
-                    onSelected: (String result) {
-                      if (result == 'edit') {
-                        _showAdminEditModuleDialog(module);
-                      } else if (result == 'delete') {
-                        _showAdminDeleteModuleConfirmation(module);
-                      }
-                    },
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'edit',
-                        child: Text('Edit Modul (Admin)'),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Text('Hapus Modul (Admin)', style: TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  )
-                : null,
+            ? PopupMenuButton<String>(
+                onSelected: (String result) {
+                  if (result == 'edit') {
+                    _showAdminEditModuleDialog(module);
+                  } else if (result == 'delete') {
+                    _showAdminDeleteModuleConfirmation(module);
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'edit',
+                    child: Text('Edit Modul (Admin)'),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'delete',
+                    child: Text(
+                      'Hapus Modul (Admin)',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              )
+            : null,
 
         initiallyExpanded: false,
         children: [
@@ -169,8 +172,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               leading: Icon(
                 lesson.contentType == 'video'
                     ? Icons.play_circle_fill
-                    : (lesson.contentType == 'pdf' ? Icons.picture_as_pdf : Icons.article),
-                color: lesson.contentType == 'pdf' ? Colors.red[400] : Colors.grey[600],
+                    : (lesson.contentType == 'pdf'
+                          ? Icons.picture_as_pdf
+                          : Icons.article),
+                color: lesson.contentType == 'pdf'
+                    ? Colors.red[400]
+                    : Colors.grey[600],
               ),
               onTap: () {
                 final url = lesson.contentBody ?? '';
@@ -179,14 +186,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                   if (url.contains('youtube.com') || url.contains('youtu.be')) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => YoutubeScreen(videoUrl: url)),
+                      MaterialPageRoute(
+                        builder: (context) => YoutubeScreen(videoUrl: url),
+                      ),
                     );
                     return;
                   }
                   // For other video links (e.g., direct MP4) fall back to LessonViewScreen which handles native playback
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => LessonViewScreen(lesson: lesson)),
+                    MaterialPageRoute(
+                      builder: (context) => LessonViewScreen(lesson: lesson),
+                    ),
                   );
                   return;
                 }
@@ -194,7 +205,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                 if (lesson.contentType == 'pdf') {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => PdfScreen(pdfUrl: url)),
+                    MaterialPageRoute(
+                      builder: (context) => PdfScreen(pdfUrl: url),
+                    ),
                   );
                   return;
                 }
@@ -202,7 +215,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                 // Default: open the lesson view for text or unknown types
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => LessonViewScreen(lesson: lesson)),
+                  MaterialPageRoute(
+                    builder: (context) => LessonViewScreen(lesson: lesson),
+                  ),
                 );
               },
               trailing: _isOwner
@@ -233,26 +248,30 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                           ],
                     )
                   : _isAdmin
-                      ? PopupMenuButton<String>(
-                          onSelected: (String result) {
-                            if (result == 'edit') {
-                              _showAdminEditLessonDialog(lesson);
-                            } else if (result == 'delete') {
-                              _showAdminDeleteLessonConfirmation(lesson);
-                            }
-                          },
-                          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  ? PopupMenuButton<String>(
+                      onSelected: (String result) {
+                        if (result == 'edit') {
+                          _showAdminEditLessonDialog(lesson);
+                        } else if (result == 'delete') {
+                          _showAdminDeleteLessonConfirmation(lesson);
+                        }
+                      },
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<String>>[
                             const PopupMenuItem<String>(
                               value: 'edit',
                               child: Text('Edit Materi (Admin)'),
                             ),
                             const PopupMenuItem<String>(
                               value: 'delete',
-                              child: Text('Hapus Materi (Admin)', style: TextStyle(color: Colors.red)),
+                              child: Text(
+                                'Hapus Materi (Admin)',
+                                style: TextStyle(color: Colors.red),
+                              ),
                             ),
                           ],
-                        )
-                      : null,
+                    )
+                  : null,
             );
           }),
 
@@ -331,7 +350,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                   ),
                   const PopupMenuItem<String>(
                     value: 'delete',
-                    child: Text('Hapus Kuis (Admin)', style: TextStyle(color: Colors.red)),
+                    child: Text(
+                      'Hapus Kuis (Admin)',
+                      style: TextStyle(color: Colors.red),
+                    ),
                   ),
                 ],
               )
@@ -367,7 +389,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
     );
   }
 
-
   // --- FUNGSI BARU: Hapus Kuis Global (Admin) ---
   void _adminDeleteCourseGlobal(int quizId, String title) {
     showDialog(
@@ -376,15 +397,22 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
         title: Text('Hapus Kuis Global?'),
         content: Text('Admin: Hapus kuis "${title}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             onPressed: () async {
               try {
-                await dataService.adminDeleteQuiz(quizId); // <-- Panggil delete Quiz Admin
+                await dataService.adminDeleteQuiz(
+                  quizId,
+                ); // <-- Panggil delete Quiz Admin
                 if (!mounted) return;
-                Navigator.pop(ctx); 
+                Navigator.pop(ctx);
                 _refreshData();
-              } catch (e) { /* ... error handling ... */ }
+              } catch (e) {
+                /* ... error handling ... */
+              }
             },
             child: const Text('Hapus', style: TextStyle(color: Colors.white)),
           ),
@@ -397,7 +425,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
     final formKey = GlobalKey<FormState>();
     final titleController = TextEditingController(text: quiz.title);
     final descController = TextEditingController(text: quiz.description);
-    final durationController = TextEditingController(text: quiz.duration?.toString() ?? '');
+    final durationController = TextEditingController(
+      text: quiz.duration?.toString() ?? '',
+    );
 
     showDialog(
       context: context,
@@ -418,13 +448,19 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               Navigator.pop(ctx);
               _refreshData();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Kuis diperbarui (Admin).'), backgroundColor: Colors.green),
+                const SnackBar(
+                  content: Text('Kuis diperbarui (Admin).'),
+                  backgroundColor: Colors.green,
+                ),
               );
             } catch (e) {
               if (!mounted) return;
               setDialogState(() => isLoading = false);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                SnackBar(
+                  content: Text(e.toString()),
+                  backgroundColor: Colors.red,
+                ),
               );
             }
           }
@@ -440,17 +476,21 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                     TextFormField(
                       controller: titleController,
                       decoration: const InputDecoration(labelText: 'Judul'),
-                      validator: (v) => v!.isEmpty ? 'Judul wajib diisi.' : null,
+                      validator: (v) =>
+                          v!.isEmpty ? 'Judul wajib diisi.' : null,
                     ),
                     TextFormField(
                       controller: descController,
                       decoration: const InputDecoration(labelText: 'Deskripsi'),
                       maxLines: 3,
-                      validator: (v) => v!.isEmpty ? 'Deskripsi wajib diisi.' : null,
+                      validator: (v) =>
+                          v!.isEmpty ? 'Deskripsi wajib diisi.' : null,
                     ),
                     TextFormField(
                       controller: durationController,
-                      decoration: const InputDecoration(labelText: 'Durasi (menit)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Durasi (menit)',
+                      ),
                       keyboardType: TextInputType.number,
                     ),
                   ],
@@ -458,14 +498,22 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
               ElevatedButton(
                 onPressed: () async {
                   if (isLoading) return;
                   await handleSave();
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
-        child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                ),
+                child: const Text(
+                  'Simpan',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           );
@@ -485,21 +533,33 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
           decoration: const InputDecoration(labelText: 'Judul Modul'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             onPressed: () async {
               try {
-                await dataService.adminUpdateModule(moduleId: module.moduleId, title: titleController.text);
+                await dataService.adminUpdateModule(
+                  moduleId: module.moduleId,
+                  title: titleController.text,
+                );
                 if (!mounted) return;
                 Navigator.pop(ctx);
                 _refreshData();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Modul diperbarui (Admin).'), backgroundColor: Colors.green),
+                  const SnackBar(
+                    content: Text('Modul diperbarui (Admin).'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -517,7 +577,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
         title: const Text('Hapus Modul (Admin)?'),
         content: Text('Hapus modul "${module.title}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
@@ -527,12 +590,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                 Navigator.pop(ctx);
                 _refreshData();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Modul dihapus (Admin).'), backgroundColor: Colors.green),
+                  const SnackBar(
+                    content: Text('Modul dihapus (Admin).'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -545,7 +614,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
 
   void _showAdminEditLessonDialog(Lesson lesson) {
     final titleController = TextEditingController(text: lesson.title);
-    final contentBodyController = TextEditingController(text: lesson.contentBody);
+    final contentBodyController = TextEditingController(
+      text: lesson.contentBody,
+    );
     String contentType = lesson.contentType;
 
     showDialog(
@@ -559,7 +630,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Judul Materi')),
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Judul Materi',
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: contentType,
@@ -568,7 +644,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                       DropdownMenuItem(value: 'text', child: Text('TEXT')),
                       DropdownMenuItem(value: 'pdf', child: Text('PDF')),
                     ],
-                    onChanged: (val) => setDialogState(() => contentType = val ?? 'text'),
+                    onChanged: (val) =>
+                        setDialogState(() => contentType = val ?? 'text'),
                     decoration: const InputDecoration(labelText: 'Tipe Konten'),
                   ),
                   const SizedBox(height: 12),
@@ -585,7 +662,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
               ElevatedButton(
                 onPressed: () async {
                   if (isLoading) return;
@@ -595,16 +675,26 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                     if (contentType == 'video') {
                       final url = contentBodyController.text.trim();
                       final uri = Uri.tryParse(url);
-                      final isHttp = uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
-                      final isMp4 = uri != null && uri.path.toLowerCase().endsWith('.mp4');
+                      final isHttp =
+                          uri != null &&
+                          (uri.scheme == 'http' || uri.scheme == 'https');
+                      final isMp4 =
+                          uri != null &&
+                          uri.path.toLowerCase().endsWith('.mp4');
                       final host = uri?.host.toLowerCase() ?? '';
-                      final forbidden = host.contains('youtube.com') || host.contains('youtu.be') || host.contains('vimeo.com') || host.contains('drive.google.com');
+                      final forbidden =
+                          host.contains('youtube.com') ||
+                          host.contains('youtu.be') ||
+                          host.contains('vimeo.com') ||
+                          host.contains('drive.google.com');
                       if (!isHttp || !isMp4 || forbidden) {
                         if (!mounted) return;
                         setDialogState(() => isLoading = false);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Gunakan tautan MP4 langsung (bukan YouTube/Drive/Vimeo).'),
+                            content: Text(
+                              'Gunakan tautan MP4 langsung (bukan YouTube/Drive/Vimeo).',
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -621,17 +711,26 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                     Navigator.pop(ctx);
                     _refreshData();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Materi diperbarui (Admin).'), backgroundColor: Colors.green),
+                      const SnackBar(
+                        content: Text('Materi diperbarui (Admin).'),
+                        backgroundColor: Colors.green,
+                      ),
                     );
                   } catch (e) {
                     if (!mounted) return;
                     setDialogState(() => isLoading = false);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                      SnackBar(
+                        content: Text(e.toString()),
+                        backgroundColor: Colors.red,
+                      ),
                     );
                   }
                 },
-        child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'Simpan',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           );
@@ -647,7 +746,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
         title: const Text('Hapus Materi (Admin)?'),
         content: Text('Hapus materi "${lesson.title}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
@@ -657,12 +759,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                 Navigator.pop(ctx);
                 _refreshData();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Materi dihapus (Admin).'), backgroundColor: Colors.green),
+                  const SnackBar(
+                    content: Text('Materi dihapus (Admin).'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -678,8 +786,22 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.course.title),
-        backgroundColor: Colors.green,
+        title: Text(widget.course.title, style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
         actions: [
           // TOMBOL EDIT (Dipanggil dari Mixin)
           if (_isOwner)
@@ -843,7 +965,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
         title: const Text('Hapus Kursus (Admin)?'),
         content: Text('Anda yakin ingin menghapus "${widget.course.title}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
@@ -853,17 +978,23 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                 Navigator.pop(ctx);
                 Navigator.of(context).pop(true);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Kursus dihapus (Admin).'), backgroundColor: Colors.green),
+                  const SnackBar(
+                    content: Text('Kursus dihapus (Admin).'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
             child: const Text('Hapus', style: TextStyle(color: Colors.white)),
-          )
+          ),
         ],
       ),
     );
@@ -871,7 +1002,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
 
   void _showAdminEditCourseForm() {
     final titleController = TextEditingController(text: widget.course.title);
-    final descController = TextEditingController(text: widget.course.description);
+    final descController = TextEditingController(
+      text: widget.course.description,
+    );
     final formKey = GlobalKey<FormState>();
 
     int? selectedLevelId = widget.course.level?.levelId;
@@ -890,7 +1023,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               bool isLoading = false;
 
               Future<void> handleSave() async {
-                if (formKey.currentState == null || !formKey.currentState!.validate()) return;
+                if (formKey.currentState == null ||
+                    !formKey.currentState!.validate())
+                  return;
                 setStateDialog(() => isLoading = true);
                 try {
                   await dataService.adminUpdateCourse(
@@ -904,13 +1039,19 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                   Navigator.pop(ctx);
                   _refreshData();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Kursus diperbarui (Admin).'), backgroundColor: Colors.green),
+                    const SnackBar(
+                      content: Text('Kursus diperbarui (Admin).'),
+                      backgroundColor: Colors.green,
+                    ),
                   );
                 } catch (e) {
                   if (!mounted) return;
                   setStateDialog(() => isLoading = false);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
@@ -924,28 +1065,44 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                       TextFormField(
                         controller: titleController,
                         decoration: const InputDecoration(labelText: 'Judul'),
-                        validator: (v) => v!.isEmpty ? 'Judul wajib diisi.' : null,
+                        validator: (v) =>
+                            v!.isEmpty ? 'Judul wajib diisi.' : null,
                       ),
                       TextFormField(
                         controller: descController,
-                        decoration: const InputDecoration(labelText: 'Deskripsi'),
+                        decoration: const InputDecoration(
+                          labelText: 'Deskripsi',
+                        ),
                         maxLines: 3,
-                        validator: (v) => v!.isEmpty ? 'Deskripsi wajib diisi.' : null,
+                        validator: (v) =>
+                            v!.isEmpty ? 'Deskripsi wajib diisi.' : null,
                       ),
                       const SizedBox(height: 16),
                       FutureBuilder(
                         future: levelsFuture,
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) return const CircularProgressIndicator();
-                          if (snapshot.hasError || !snapshot.hasData) return const Text('Gagal memuat jenjang');
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting)
+                            return const CircularProgressIndicator();
+                          if (snapshot.hasError || !snapshot.hasData)
+                            return const Text('Gagal memuat jenjang');
                           return DropdownButtonFormField<int>(
                             value: selectedLevelId,
                             items: snapshot.data!
-                                .map<DropdownMenuItem<int>>((l) => DropdownMenuItem(value: l.levelId, child: Text(l.levelName)))
+                                .map<DropdownMenuItem<int>>(
+                                  (l) => DropdownMenuItem(
+                                    value: l.levelId,
+                                    child: Text(l.levelName),
+                                  ),
+                                )
                                 .toList(),
-                            onChanged: (val) => setStateDialog(() => selectedLevelId = val),
-                            decoration: const InputDecoration(labelText: 'Jenjang'),
-                            validator: (v) => v == null ? 'Jenjang wajib dipilih.' : null,
+                            onChanged: (val) =>
+                                setStateDialog(() => selectedLevelId = val),
+                            decoration: const InputDecoration(
+                              labelText: 'Jenjang',
+                            ),
+                            validator: (v) =>
+                                v == null ? 'Jenjang wajib dipilih.' : null,
                           );
                         },
                       ),
@@ -953,16 +1110,29 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                       FutureBuilder(
                         future: subjectsFuture,
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) return const CircularProgressIndicator();
-                          if (snapshot.hasError || !snapshot.hasData) return const Text('Gagal memuat mapel');
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting)
+                            return const CircularProgressIndicator();
+                          if (snapshot.hasError || !snapshot.hasData)
+                            return const Text('Gagal memuat mapel');
                           return DropdownButtonFormField<int>(
                             value: selectedSubjectId,
                             items: snapshot.data!
-                                .map<DropdownMenuItem<int>>((s) => DropdownMenuItem(value: s.subjectId, child: Text(s.subjectName)))
+                                .map<DropdownMenuItem<int>>(
+                                  (s) => DropdownMenuItem(
+                                    value: s.subjectId,
+                                    child: Text(s.subjectName),
+                                  ),
+                                )
                                 .toList(),
-                            onChanged: (val) => setStateDialog(() => selectedSubjectId = val),
-                            decoration: const InputDecoration(labelText: 'Mata Pelajaran'),
-                            validator: (v) => v == null ? 'Mata Pelajaran wajib dipilih.' : null,
+                            onChanged: (val) =>
+                                setStateDialog(() => selectedSubjectId = val),
+                            decoration: const InputDecoration(
+                              labelText: 'Mata Pelajaran',
+                            ),
+                            validator: (v) => v == null
+                                ? 'Mata Pelajaran wajib dipilih.'
+                                : null,
                           );
                         },
                       ),
@@ -970,16 +1140,30 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Batal'),
+                          ),
                           ElevatedButton(
                             onPressed: isLoading ? null : handleSave,
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                            ),
                             child: isLoading
-                                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white))
-                                : const Text('Simpan', style: TextStyle(color: Colors.white)),
-                          )
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Simpan',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                          ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ),

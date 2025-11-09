@@ -44,7 +44,7 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tidak bisa membuka $urlString')), 
+          SnackBar(content: Text('Tidak bisa membuka $urlString')),
         );
       }
     }
@@ -55,8 +55,22 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
     final lesson = widget.lesson;
     return Scaffold(
       appBar: AppBar(
-        title: Text(lesson.title),
-        backgroundColor: Colors.green,
+        title: Text(lesson.title, style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -118,7 +132,10 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text('Video dari tautan diputar langsung', style: TextStyle(color: Colors.grey[700])),
+          Text(
+            'Video dari tautan diputar langsung',
+            style: TextStyle(color: Colors.grey[700]),
+          ),
         ],
       );
     }
@@ -133,7 +150,8 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
           Icon(Icons.video_library, size: 96, color: Colors.green[700]),
           const SizedBox(height: 12),
           Text(
-            _loadError ?? 'Tautan video tidak dapat diputar langsung. Buka di aplikasi lain.',
+            _loadError ??
+                'Tautan video tidak dapat diputar langsung. Buka di aplikasi lain.',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -141,8 +159,11 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
             onPressed: () => _launchURL(url),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             icon: const Icon(Icons.open_in_new, color: Colors.white),
-            label: const Text('BUKA VIDEO', style: TextStyle(color: Colors.white)),
-          )
+            label: const Text(
+              'BUKA VIDEO',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
         ],
       ),
     );
@@ -168,8 +189,11 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
             const SizedBox(height: 6),
             Text(
               Uri.tryParse(url)?.host ?? 'Link video',
-              style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
-            )
+              style: const TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -179,25 +203,25 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-            onTap: () {
-              // If it's a YouTube URL, open the YoutubePlayerScreen fullscreen
-              if (_isYouTubeUrl(url)) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => YoutubeScreen(videoUrl: url)),
-                );
-                return;
-              }
+          onTap: () {
+            // If it's a YouTube URL, open the YoutubePlayerScreen fullscreen
+            if (_isYouTubeUrl(url)) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => YoutubeScreen(videoUrl: url)),
+              );
+              return;
+            }
 
-              // For other network videos (MP4), prepare the native player
-              setState(() {
-                _showPreview = false;
-                _isLoading = true;
-              });
-              _prepareVideo().whenComplete(() {
-                if (mounted) setState(() => _isLoading = false);
-              });
-            },
+            // For other network videos (MP4), prepare the native player
+            setState(() {
+              _showPreview = false;
+              _isLoading = true;
+            });
+            _prepareVideo().whenComplete(() {
+              if (mounted) setState(() => _isLoading = false);
+            });
+          },
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: AspectRatio(
@@ -214,7 +238,11 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
                         shape: BoxShape.circle,
                       ),
                       padding: const EdgeInsets.all(8),
-                      child: Icon(Icons.play_arrow, color: Colors.red.shade600, size: 40),
+                      child: Icon(
+                        Icons.play_arrow,
+                        color: Colors.red.shade600,
+                        size: 40,
+                      ),
                     ),
                   ),
                 ],
@@ -250,7 +278,10 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
     // Platform-aware handling: PDF viewer plugin works on Android/iOS. For others or non-HTTPS, fallback.
     final scheme = Uri.tryParse(url)?.scheme.toLowerCase();
     final isSecure = scheme == 'https';
-    final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+    final isMobile =
+        !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
 
     if (!isMobile) {
       return Column(
@@ -272,7 +303,10 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
           ElevatedButton.icon(
             onPressed: () => _launchURL(url),
             icon: const Icon(Icons.open_in_new, color: Colors.white),
-            label: const Text('BUKA PDF', style: TextStyle(color: Colors.white)),
+            label: const Text(
+              'BUKA PDF',
+              style: TextStyle(color: Colors.white),
+            ),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
           ),
         ],
@@ -299,7 +333,10 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
           ElevatedButton.icon(
             onPressed: () => _launchURL(url),
             icon: const Icon(Icons.open_in_new, color: Colors.white),
-            label: const Text('BUKA DI BROWSER', style: TextStyle(color: Colors.white)),
+            label: const Text(
+              'BUKA DI BROWSER',
+              style: TextStyle(color: Colors.white),
+            ),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
           ),
         ],
@@ -325,9 +362,16 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.picture_as_pdf, size: 56, color: Colors.redAccent),
+                const Icon(
+                  Icons.picture_as_pdf,
+                  size: 56,
+                  color: Colors.redAccent,
+                ),
                 const SizedBox(height: 8),
-                Text(filename, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  filename,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ],
             ),
           ),
@@ -337,13 +381,16 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
           children: [
             ElevatedButton.icon(
               onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => PdfScreen(pdfUrl: url)),
-                    );
-                },
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => PdfScreen(pdfUrl: url)),
+                );
+              },
               icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
-              label: const Text('LIHAT PDF', style: TextStyle(color: Colors.white)),
+              label: const Text(
+                'LIHAT PDF',
+                style: TextStyle(color: Colors.white),
+              ),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             ),
             const SizedBox(width: 12),
@@ -356,7 +403,6 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
         ),
       ],
     );
-    
   }
 
   // === TEXT ===
@@ -383,7 +429,8 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
       if (v != null && v.isNotEmpty) return v;
       // youtube.com/shorts/<id> or /embed/<id>
       if (uri.pathSegments.length >= 2 &&
-          (uri.pathSegments.first == 'shorts' || uri.pathSegments.first == 'embed')) {
+          (uri.pathSegments.first == 'shorts' ||
+              uri.pathSegments.first == 'embed')) {
         return uri.pathSegments[1];
       }
     }
@@ -395,7 +442,8 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
   bool _isGoogleDriveUrl(String url) {
     final uri = Uri.tryParse(url);
     if (uri == null) return false;
-    return uri.host.contains('drive.google.com') && uri.pathSegments.contains('file');
+    return uri.host.contains('drive.google.com') &&
+        uri.pathSegments.contains('file');
   }
 
   // Removed inline Drive preview helper (we open Drive files with the PDF screen instead).
@@ -434,7 +482,8 @@ class _LessonViewScreenState extends State<LessonViewScreen> {
     } catch (e) {
       // If native playback fails, provide an explanatory error.
       if (_isGoogleDriveUrl(url)) {
-        _loadError = 'Video dari Google Drive tidak didukung oleh pemutar aplikasi. Silakan buka di browser atau gunakan tautan MP4 langsung.';
+        _loadError =
+            'Video dari Google Drive tidak didukung oleh pemutar aplikasi. Silakan buka di browser atau gunakan tautan MP4 langsung.';
       } else {
         _loadError = 'Format video tidak didukung atau memerlukan autentikasi.';
       }

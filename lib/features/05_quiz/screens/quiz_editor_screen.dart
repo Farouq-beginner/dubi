@@ -13,15 +13,20 @@ import 'edit_question_screen.dart';
 class QuizEditorScreen extends StatefulWidget {
   final int quizId;
   final String quizTitle;
-  const QuizEditorScreen({super.key, required this.quizId, required this.quizTitle});
+  const QuizEditorScreen({
+    super.key,
+    required this.quizId,
+    required this.quizTitle,
+  });
 
   @override
   _QuizEditorScreenState createState() => _QuizEditorScreenState();
 }
 
-class _QuizEditorScreenState extends State<QuizEditorScreen> 
-    with QuizQuestionCrudMixin<QuizEditorScreen> // Gunakan Mixin CRUD
-{
+class _QuizEditorScreenState extends State<QuizEditorScreen>
+    with
+        QuizQuestionCrudMixin<QuizEditorScreen> // Gunakan Mixin CRUD
+        {
   late Future<Quiz> _quizFuture;
   late DataService _dataService;
 
@@ -29,9 +34,12 @@ class _QuizEditorScreenState extends State<QuizEditorScreen>
   @override
   DataService get dataService => _dataService;
   @override
-  Future<void> refreshData() async { _refreshQuiz(); }
+  Future<void> refreshData() async {
+    _refreshQuiz();
+  }
+
   @override
-  BuildContext get context => super.context; 
+  BuildContext get context => super.context;
   @override
   bool get mounted => super.mounted;
   // ----------------------------------------
@@ -40,27 +48,46 @@ class _QuizEditorScreenState extends State<QuizEditorScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _dataService = DataService(context);
-    _refreshQuiz(); 
+    _refreshQuiz();
   }
 
   // Fungsi untuk refresh data kuis
   void _refreshQuiz() {
     setState(() {
       // Panggil API Guru untuk mendapatkan data lengkap (termasuk jawaban benar)
-      _quizFuture = _dataService.fetchQuizDetailsForTeacher(widget.quizId); 
+      _quizFuture = _dataService.fetchQuizDetailsForTeacher(widget.quizId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     // Ambil role user di sini
-    final userRole = Provider.of<AuthProvider>(context, listen: false).user?.role ?? 'student';
+    final userRole =
+        Provider.of<AuthProvider>(context, listen: false).user?.role ??
+        'student';
     final bool isAdmin = userRole == 'admin';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit Kuis: ${widget.quizTitle}'),
-        backgroundColor: Colors.deepPurple,
+        title: Text(
+          'Edit Kuis: ${widget.quizTitle}',
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder<Quiz>(
         future: _quizFuture,
@@ -71,7 +98,9 @@ class _QuizEditorScreenState extends State<QuizEditorScreen>
           if (snapshot.hasError) {
             return Center(child: Text('Error memuat kuis: ${snapshot.error}'));
           }
-          if (!snapshot.hasData || snapshot.data!.questions == null || snapshot.data!.questions!.isEmpty) {
+          if (!snapshot.hasData ||
+              snapshot.data!.questions == null ||
+              snapshot.data!.questions!.isEmpty) {
             return Center(
               child: Text(
                 'Kuis ini belum memiliki pertanyaan.\nTekan tombol + untuk menambahkannya.',
@@ -86,15 +115,19 @@ class _QuizEditorScreenState extends State<QuizEditorScreen>
 
           // Tampilkan daftar pertanyaan yang ada
           return RefreshIndicator(
-            onRefresh: () async { _refreshQuiz(); },
+            onRefresh: () async {
+              _refreshQuiz();
+            },
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: questions.length,
               itemBuilder: (context, index) {
                 final question = questions[index];
-                
+
                 // Hitung jumlah jawaban benar
-                final correctAnswers = question.answers.where((a) => a.isCorrect == true).length;
+                final correctAnswers = question.answers
+                    .where((a) => a.isCorrect == true)
+                    .length;
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -102,46 +135,70 @@ class _QuizEditorScreenState extends State<QuizEditorScreen>
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.deepPurple[100],
-                      child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
                     ),
                     title: Text(question.questionText),
-                    subtitle: Text('Jawaban Benar: $correctAnswers dari ${question.answers.length}'),
+                    subtitle: Text(
+                      'Jawaban Benar: $correctAnswers dari ${question.answers.length}',
+                    ),
                     trailing: PopupMenuButton<String>(
-                        onSelected: (String result) {
-                          if (result == 'edit') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => EditQuestionScreen(quizId: widget.quizId, question: question),
+                      onSelected: (String result) {
+                        if (result == 'edit') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditQuestionScreen(
+                                quizId: widget.quizId,
+                                question: question,
                               ),
-                            ).then((isSuccess) {
-                              if (isSuccess == true) {
-                                _refreshQuiz();
-                              }
-                            });
-                          } else if (result == 'delete') {
-                            if (isAdmin) {
-                              _showAdminDeleteQuestionConfirmation(question.questionId);
-                            } else {
-                              // Guru
-                              showDeleteQuestionConfirmation(widget.quizId, question);
+                            ),
+                          ).then((isSuccess) {
+                            if (isSuccess == true) {
+                              _refreshQuiz();
                             }
+                          });
+                        } else if (result == 'delete') {
+                          if (isAdmin) {
+                            _showAdminDeleteQuestionConfirmation(
+                              question.questionId,
+                            );
+                          } else {
+                            // Guru
+                            showDeleteQuestionConfirmation(
+                              widget.quizId,
+                              question,
+                            );
                           }
-                        },
-                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                        }
+                      },
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<String>>[
                             const PopupMenuItem<String>(
-                                value: 'edit',
-                                child: Text('Edit Pertanyaan'),
+                              value: 'edit',
+                              child: Text('Edit Pertanyaan'),
                             ),
                             const PopupMenuItem<String>(
-                                value: 'delete',
-                                child: Text('Hapus Pertanyaan', style: TextStyle(color: Colors.red)),
+                              value: 'delete',
+                              child: Text(
+                                'Hapus Pertanyaan',
+                                style: TextStyle(color: Colors.red),
+                              ),
                             ),
-                        ],
+                          ],
                     ),
                     onTap: () {
-                       // Navigasi ke Halaman Edit/Preview Pertanyaan
-                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preview/Edit Pertanyaan...')));
+                      // Navigasi ke Halaman Edit/Preview Pertanyaan
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Preview/Edit Pertanyaan...'),
+                        ),
+                      );
                     },
                   ),
                 );
@@ -166,7 +223,10 @@ class _QuizEditorScreenState extends State<QuizEditorScreen>
           });
         },
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Tambah Pertanyaan', style: TextStyle(color: Colors.white)),
+        label: const Text(
+          'Tambah Pertanyaan',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.deepPurple,
       ),
     );
@@ -181,7 +241,10 @@ extension on _QuizEditorScreenState {
         title: const Text('Hapus Pertanyaan (Admin)?'),
         content: const Text('Aksi ini tidak dapat dibatalkan.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
@@ -191,12 +254,18 @@ extension on _QuizEditorScreenState {
                 Navigator.pop(ctx);
                 _refreshQuiz();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Pertanyaan dihapus (Admin).'), backgroundColor: Colors.green),
+                  const SnackBar(
+                    content: Text('Pertanyaan dihapus (Admin).'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
