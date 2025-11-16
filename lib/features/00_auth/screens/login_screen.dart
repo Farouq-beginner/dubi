@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -34,9 +35,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final packageInfo = await PackageInfo.fromPlatform();
       int currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
 
-      final response = await http.get(Uri.parse(
-        'https://dubibackend-production.up.railway.app/api/check-update?build_number=$currentBuild',
-      ));
+      final response = await http.get(
+        Uri.parse(
+          'https://dubibackend-production.up.railway.app/api/check-update?build_number=$currentBuild',
+        ),
+      );
 
       print('📥 Status: ${response.statusCode}');
       if (response.statusCode == 200) {
@@ -48,7 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
         String downloadUrl = data['download_url'] ?? '';
         String changelog = data['changelog'] ?? '';
 
-        print('📱 Current build: $currentBuild | 🔄 Latest build: $latestBuild');
+        print(
+          '📱 Current build: $currentBuild | 🔄 Latest build: $latestBuild',
+        );
 
         if (forceUpdate && latestBuild > currentBuild) {
           setState(() => _updateRequired = true);
@@ -89,8 +94,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 }
               },
               icon: const Icon(Icons.download, color: Colors.white),
-              label: const Text('Unduh Sekarang', style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              label: const Text(
+                'Unduh Sekarang',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color.fromARGB(255, 4, 31, 184),
+              ),
             ),
           ],
         ),
@@ -104,7 +114,9 @@ class _LoginScreenState extends State<LoginScreen> {
       // 🚫 Blokir login jika update wajib
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Silakan perbarui aplikasi ke versi terbaru untuk melanjutkan.'),
+          content: Text(
+            'Silakan perbarui aplikasi ke versi terbaru untuk melanjutkan.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -113,8 +125,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await Provider.of<AuthProvider>(context, listen: false)
-          .login(_emailController.text, _passwordController.text);
+      await Provider.of<AuthProvider>(
+        context,
+        listen: false,
+      ).login(_emailController.text, _passwordController.text);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
@@ -135,14 +149,18 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.school, size: 100, color: Colors.blue),
+                Icon(
+                  Icons.school,
+                  size: 100,
+                  color: Color.fromARGB(255, 4, 31, 184),
+                ),
                 const SizedBox(height: 16),
                 const Text(
                   'Selamat Datang!',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: Color.fromARGB(255, 4, 31, 184),
                   ),
                 ),
                 const Text(
@@ -155,7 +173,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _emailController,
                   decoration: _buildInputDecoration('Email kamu'),
                   keyboardType: TextInputType.emailAddress,
-                  enabled: !_updateRequired, // ❌ nonaktifkan input jika wajib update
+                  enabled:
+                      !_updateRequired, // ❌ nonaktifkan input jika wajib update
                 ),
                 const SizedBox(height: 16),
 
@@ -169,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         _obscurePassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: Colors.blue,
+                        color: Color.fromARGB(255, 4, 31, 184),
                       ),
                       onPressed: () {
                         setState(() {
@@ -185,10 +204,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   const CircularProgressIndicator()
                 else
                   ElevatedButton(
-                    onPressed: _updateRequired ? null : _handleLogin, // 🚫 tidak aktif saat wajib update
+                    onPressed: _updateRequired
+                        ? null
+                        : _handleLogin, // 🚫 tidak aktif saat wajib update
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _updateRequired ? Colors.grey : Colors.blue,
+                      backgroundColor: _updateRequired
+                          ? Colors.grey
+                          : Color.fromARGB(255, 4, 31, 184),
                       minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -207,12 +229,38 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? null
                       : () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const RegisterScreen(),
+                            ),
                           );
                         },
                   child: const Text(
                     'Belum punya akun? Daftar di sini',
-                    style: TextStyle(color: Colors.blue, fontSize: 16),
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 4, 31, 184),
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                TextButton(
+                  onPressed: _updateRequired
+                      ? null
+                      : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ForgotPasswordScreen(),
+                            ),
+                          );
+                        },
+                  child: const Text(
+                    'Lupa Password?',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 4, 31, 184),
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               ],
@@ -230,12 +278,12 @@ class _LoginScreenState extends State<LoginScreen> {
       fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(color: Colors.lightBlueAccent.shade200),
+        borderSide: BorderSide(color: Color.fromARGB(255, 4, 31, 184)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
         borderSide: BorderSide(
-          color: Colors.lightBlueAccent.shade200,
+          color: Color.fromARGB(255, 4, 31, 184),
           width: 2,
         ),
       ),

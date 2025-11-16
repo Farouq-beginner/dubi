@@ -10,7 +10,7 @@ class AuthProvider with ChangeNotifier {
   final FlutterSecureStorage _storage = FlutterSecureStorage();
   final Dio _dio = Dio(
     BaseOptions(
-            // PENTING:
+      // PENTING:
       // Gunakan 10.0.2.2 untuk Android Emulator
       // Gunakan http://127.0.0.1:8000 jika menjalankan di Chrome (Web)
       // Pastikan server 'php artisan serve' Anda tetap berjalan!
@@ -23,7 +23,7 @@ class AuthProvider with ChangeNotifier {
 
   User? _user;
   String? _token;
-  bool _isLoading = true; 
+  bool _isLoading = true;
 
   // --- GETTERS (Untuk dibaca UI) ---
   User? get user => _user;
@@ -34,7 +34,7 @@ class AuthProvider with ChangeNotifier {
 
   // --- CONSTRUCTOR ---
   AuthProvider() {
-    _init(); 
+    _init();
   }
 
   // --- LOGIC METHODS ---
@@ -46,7 +46,7 @@ class AuthProvider with ChangeNotifier {
 
       if (token != null && userJson != null) {
         _token = token;
-        _user = User.fromJson(jsonDecode(userJson)); 
+        _user = User.fromJson(jsonDecode(userJson));
         _dio.options.headers['Authorization'] = 'Bearer $_token';
       }
     } catch (e) {
@@ -56,7 +56,7 @@ class AuthProvider with ChangeNotifier {
       _user = null;
     } finally {
       _isLoading = false;
-      notifyListeners(); 
+      notifyListeners();
     }
   }
 
@@ -71,12 +71,15 @@ class AuthProvider with ChangeNotifier {
       if (response.data['success'] == true) {
         // --- INI JALUR SUKSES ---
         // Kita HANYA parse 'user' jika sukses
-        _user = User.fromJson(response.data['user']); 
+        _user = User.fromJson(response.data['user']);
         _token = response.data['token'];
 
         await _storage.write(key: 'authToken', value: _token);
-        await _storage.write(key: 'userData', value: jsonEncode(_user!.toJson()));
-        
+        await _storage.write(
+          key: 'userData',
+          value: jsonEncode(_user!.toJson()),
+        );
+
         _dio.options.headers['Authorization'] = 'Bearer $_token';
 
         notifyListeners();
@@ -121,7 +124,10 @@ class AuthProvider with ChangeNotifier {
           parsed2 = User.fromJson(data2);
         }
         _user = parsed2;
-        await _storage.write(key: 'userData', value: jsonEncode(_user!.toJson()));
+        await _storage.write(
+          key: 'userData',
+          value: jsonEncode(_user!.toJson()),
+        );
         notifyListeners();
       } catch (e) {
         // Diamkan (backend mungkin tidak menyediakan endpoint ini)
@@ -141,29 +147,30 @@ class AuthProvider with ChangeNotifier {
     required String role,
     int? levelId,
   }) async {
-     try {
-       final response = await _dio.post('/register', data: {
-         'full_name': fullName,
-         'username': username,
-         'email': email,
-         'password': password,
-         'role': role,
-         'level_id': levelId,
-       });
-       
-       // JALUR SUKSES: Kembalikan pesan sukses
-       return response.data['message'];
+    try {
+      final response = await _dio.post(
+        '/register',
+        data: {
+          'full_name': fullName,
+          'username': username,
+          'email': email,
+          'password': password,
+          'role': role,
+          'level_id': levelId,
+        },
+      );
 
-     } on DioException catch (e) {
+      // JALUR SUKSES: Kembalikan pesan sukses
+      return response.data['message'];
+    } on DioException catch (e) {
       // --- INI SUDAH BENAR (JALUR GAGAL) ---
       // Lemparkan pesan error-nya sebagai String.
       throw (e.response?.data['message'] ?? 'Register Gagal. Terjadi error.');
-     } catch (e) {
+    } catch (e) {
       print("Register error (non-dio): $e");
       throw ('Terjadi kesalahan tidak dikenal saat register.');
-     }
+    }
   }
-
 
   Future<void> logout() async {
     try {
@@ -176,6 +183,22 @@ class AuthProvider with ChangeNotifier {
       await _storage.deleteAll();
       _dio.options.headers.remove('Authorization');
       notifyListeners();
+    }
+  }
+
+  /// [PUBLIC] Handle Forgot Password
+  Future<void> forgotPassword(String email) async {
+    try {
+      await _dio.post('/forgot-password', data: {'email': email});
+
+      // Assuming success, no need to parse user or token
+      // Backend should send reset link to email
+    } on DioException catch (e) {
+      throw (e.response?.data['message'] ??
+          'Forgot password gagal. Terjadi error.');
+    } catch (e) {
+      print("Forgot password error (non-dio): $e");
+      throw ('Terjadi kesalahan tidak dikenal saat forgot password.');
     }
   }
 }
