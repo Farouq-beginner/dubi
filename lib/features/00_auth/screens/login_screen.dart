@@ -35,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
       int currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
 
       final response = await http.get(Uri.parse(
-        'https://dubibackend-production.up.railway.app/api/check-update?build_number=$currentBuild',
+        'http://127.0.0.1:8000/api/check-update?build_number=$currentBuild',
       ));
 
       print('📥 Status: ${response.statusCode}');

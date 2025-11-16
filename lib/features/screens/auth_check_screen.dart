@@ -31,7 +31,7 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
-      final uri = Uri.parse('https://dubibackend-production.up.railway.app/api/check-update?build_number=$currentBuild');
+      final uri = Uri.parse('http://127.0.0.1:8000/api/check-update?build_number=$currentBuild');
       final resp = await http.get(uri);
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body);
