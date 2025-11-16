@@ -16,7 +16,7 @@ class QuizResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double scoreDouble = (score as num).toDouble();
-    
+
     String message;
     IconData icon;
     Color color;
@@ -37,9 +37,23 @@ class QuizResultScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Hasil Kuis'),
-        backgroundColor: color,
-        automaticallyImplyLeading: false, 
+        title: Text('Hasil Kuis', style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
+        automaticallyImplyLeading: false,
       ),
       body: Center(
         // --- [PERBAIKAN DI SINI] ---
@@ -56,7 +70,11 @@ class QuizResultScreen extends StatelessWidget {
               // 2. Pesan Umpan Balik
               Text(
                 message,
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16),
@@ -68,7 +86,11 @@ class QuizResultScreen extends StatelessWidget {
               ),
               Text(
                 '${scoreDouble.toStringAsFixed(0)}', // Tampilkan skor bulat
-                style: TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: TextStyle(
+                  fontSize: 80,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
               SizedBox(height: 24),
 
@@ -84,13 +106,18 @@ class QuizResultScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: () {
                   // Kembali ke layar detail kursus
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
-                child: Text('Kembali ke Kursus', style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: Text(
+                  'Kembali ke Kursus',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
             ],
           ),

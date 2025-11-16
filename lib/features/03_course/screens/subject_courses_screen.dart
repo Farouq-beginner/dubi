@@ -21,15 +21,34 @@ class _SubjectCoursesScreenState extends State<SubjectCoursesScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Panggil API baru kita
-    _coursesFuture = DataService(context).fetchCoursesBySubject(widget.subject.subjectId);
+    _coursesFuture = DataService(
+      context,
+    ).fetchCoursesBySubject(widget.subject.subjectId);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.subject.subjectName),
-        backgroundColor: Colors.green,
+        title: Text(
+          widget.subject.subjectName,
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder<List<Course>>(
         future: _coursesFuture,
@@ -42,11 +61,15 @@ class _SubjectCoursesScreenState extends State<SubjectCoursesScreen> {
             return Center(child: Text(snapshot.error.toString()));
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('Belum ada kursus untuk mata pelajaran ${widget.subject.subjectName}.'));
+            return Center(
+              child: Text(
+                'Belum ada kursus untuk mata pelajaran ${widget.subject.subjectName}.',
+              ),
+            );
           }
 
           final courses = snapshot.data!;
-          
+
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: courses.length,
@@ -62,7 +85,8 @@ class _SubjectCoursesScreenState extends State<SubjectCoursesScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => CourseDetailScreen(course: course),
+                        builder: (context) =>
+                            CourseDetailScreen(course: course),
                       ),
                     );
                   },

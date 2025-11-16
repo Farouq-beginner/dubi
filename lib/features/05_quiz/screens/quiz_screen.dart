@@ -11,7 +11,8 @@ class QuizScreen extends StatefulWidget {
   // [KEMBALIKAN KE PARAMETER LAMA]
   final int quizId;
   final String quizTitle;
-  const QuizScreen({Key? key, required this.quizId, required this.quizTitle}) : super(key: key);
+  const QuizScreen({Key? key, required this.quizId, required this.quizTitle})
+    : super(key: key);
 
   @override
   _QuizScreenState createState() => _QuizScreenState();
@@ -20,7 +21,7 @@ class QuizScreen extends StatefulWidget {
 class _QuizScreenState extends State<QuizScreen> {
   late DataService _dataService;
   late Future<Quiz> _quizFuture; // <-- Future untuk memuat data kuis
-  
+
   // State untuk UI
   final PageController _pageController = PageController();
   List<Question> _questions = [];
@@ -36,7 +37,7 @@ class _QuizScreenState extends State<QuizScreen> {
   void initState() {
     super.initState();
     _dataService = DataService(context);
-    
+
     // [PERBAIKAN] Panggil API untuk mendapatkan data kuis lengkap
     _quizFuture = _dataService.fetchQuizDetails(widget.quizId);
 
@@ -45,7 +46,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel(); 
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -59,7 +60,7 @@ class _QuizScreenState extends State<QuizScreen> {
           });
         } else {
           _timer?.cancel();
-          _submitQuiz(autoSubmit: true); 
+          _submitQuiz(autoSubmit: true);
         }
       });
     }
@@ -70,28 +71,36 @@ class _QuizScreenState extends State<QuizScreen> {
       _selectedAnswers[questionId] = answerId;
     });
   }
-  
+
   Future<void> _submitQuiz({bool autoSubmit = false}) async {
-    if (_isLoading) return; 
-    
+    if (_isLoading) return;
+
     setState(() => _isLoading = true);
     _timer?.cancel();
 
-    final List<Map<String, int>> answersList = _selectedAnswers.entries.map((e) {
+    final List<Map<String, int>> answersList = _selectedAnswers.entries.map((
+      e,
+    ) {
       return {'question_id': e.key, 'answer_id': e.value};
     }).toList();
 
     try {
-      final results = await _dataService.submitQuiz(widget.quizId, answersList); // <-- Gunakan widget.quizId
-      
+      final results = await _dataService.submitQuiz(
+        widget.quizId,
+        answersList,
+      ); // <-- Gunakan widget.quizId
+
       if (!mounted) return;
-      
+
       if (autoSubmit) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Waktu habis! Kuis telah dikumpulkan.'), backgroundColor: Colors.orange)
+          const SnackBar(
+            content: Text('Waktu habis! Kuis telah dikumpulkan.'),
+            backgroundColor: Colors.orange,
+          ),
         );
       }
-      
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -120,18 +129,26 @@ class _QuizScreenState extends State<QuizScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('Keluar dari Kuis?'),
-        content: const Text('Jika Anda keluar, kuis akan otomatis dikumpulkan. Jawaban yang belum diisi akan dianggap salah.'),
+        content: const Text(
+          'Jika Anda keluar, kuis akan otomatis dikumpulkan. Jawaban yang belum diisi akan dianggap salah.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               Navigator.pop(ctx, true);
-            }, 
-            child: const Text('Ya, Keluar & Kumpulkan', style: TextStyle(color: Colors.white))
+            },
+            child: const Text(
+              'Ya, Keluar & Kumpulkan',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
-      )
+      ),
     );
     return result ?? false;
   }
@@ -146,10 +163,10 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, 
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return; 
-        
+        if (didPop) return;
+
         final shouldPop = await _showExitWarning();
         if (shouldPop) {
           _submitQuiz(autoSubmit: true);
@@ -157,9 +174,26 @@ class _QuizScreenState extends State<QuizScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.quizTitle), // <-- Gunakan widget.quizTitle
-          backgroundColor: Colors.deepPurple,
-          automaticallyImplyLeading: true, 
+          title: Text(
+            widget.quizTitle,
+            style: TextStyle(color: Colors.white),
+          ), // <-- Gunakan widget.quizTitle
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color.fromARGB(255, 4, 31, 184),
+                  Color.fromARGB(255, 77, 80, 255),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+          automaticallyImplyLeading: true,
           actions: [
             if (_timer != null) // Tampilkan Timer jika sudah aktif
               Center(
@@ -167,7 +201,11 @@ class _QuizScreenState extends State<QuizScreen> {
                   padding: const EdgeInsets.only(right: 16.0),
                   child: Text(
                     _formatDuration(_remainingSeconds),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -180,39 +218,54 @@ class _QuizScreenState extends State<QuizScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return Center(child: Text("Error memuat kuis: ${snapshot.error.toString()}"));
+              return Center(
+                child: Text("Error memuat kuis: ${snapshot.error.toString()}"),
+              );
             }
-            if (!snapshot.hasData || snapshot.data!.questions == null || snapshot.data!.questions!.isEmpty) {
-              return const Center(child: Text("Kuis ini tidak memiliki pertanyaan."));
+            if (!snapshot.hasData ||
+                snapshot.data!.questions == null ||
+                snapshot.data!.questions!.isEmpty) {
+              return const Center(
+                child: Text("Kuis ini tidak memiliki pertanyaan."),
+              );
             }
-            
+
             // --- DATA KUIS DARI API SUDAH LENGKAP ---
             final quizData = snapshot.data!;
             _questions = quizData.questions!; // Set questions
-            
+
             // Cek apakah timer perlu dimulai (Hanya sekali!)
-            if (_timer == null && quizData.duration != null && quizData.duration! > 0) {
+            if (_timer == null &&
+                quizData.duration != null &&
+                quizData.duration! > 0) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                 startTimer(quizData.duration!); 
+                startTimer(quizData.duration!);
               });
             }
-            
+
             return Column(
               children: [
                 Expanded(
                   child: PageView.builder(
                     controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(), 
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: _questions.length,
                     itemBuilder: (context, index) {
                       final question = _questions[index];
-                      return _buildQuestionCard(question, index + 1, _questions.length);
+                      return _buildQuestionCard(
+                        question,
+                        index + 1,
+                        _questions.length,
+                      );
                     },
                   ),
                 ),
-                
+
                 if (_isLoading)
-                  const Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator())
+                  const Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
+                  )
                 else
                   _buildNavigationControls(),
               ],
@@ -222,10 +275,12 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
     );
   }
-  
+
   // Tampilan Kontrol Navigasi Bawah
   Widget _buildNavigationControls() {
-    int currentPage = _pageController.positions.isEmpty ? 0 : _pageController.page!.round();
+    int currentPage = _pageController.positions.isEmpty
+        ? 0
+        : _pageController.page!.round();
     bool isLastPage = currentPage == _questions.length - 1;
 
     return Container(
@@ -235,19 +290,29 @@ class _QuizScreenState extends State<QuizScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           TextButton(
-            onPressed: currentPage == 0 ? null : () { 
-              _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeIn);
-            },
+            onPressed: currentPage == 0
+                ? null
+                : () {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeIn,
+                    );
+                  },
             child: const Text('Sebelumnya'),
           ),
-          
+
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: isLastPage ? Colors.green : Colors.deepPurple),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isLastPage ? Colors.green : Colors.deepPurple,
+            ),
             onPressed: () {
               int currentQuestionId = _questions[currentPage].questionId;
               if (!_selectedAnswers.containsKey(currentQuestionId)) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Harap pilih satu jawaban!'), backgroundColor: Colors.orange),
+                  const SnackBar(
+                    content: Text('Harap pilih satu jawaban!'),
+                    backgroundColor: Colors.orange,
+                  ),
                 );
                 return;
               }
@@ -257,29 +322,47 @@ class _QuizScreenState extends State<QuizScreen> {
                   context: context,
                   builder: (ctx) => AlertDialog(
                     title: const Text('Kumpulkan Kuis?'),
-                    content: const Text('Anda yakin ingin menyelesaikan kuis ini?'),
+                    content: const Text(
+                      'Anda yakin ingin menyelesaikan kuis ini?',
+                    ),
                     actions: [
-                      TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
-                      ElevatedButton(onPressed: () {
-                        Navigator.of(ctx).pop();
-                        _submitQuiz(autoSubmit: false);
-                      }, child: const Text('Ya, Kumpulkan!')),
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Batal'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          _submitQuiz(autoSubmit: false);
+                        },
+                        child: const Text('Ya, Kumpulkan!'),
+                      ),
                     ],
-                  )
+                  ),
                 );
               } else {
-                _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeIn);
+                _pageController.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeIn,
+                );
               }
             },
-            child: Text(isLastPage ? 'Selesai Kuis' : 'Lanjut', style: const TextStyle(color: Colors.white)),
+            child: Text(
+              isLastPage ? 'Selesai Kuis' : 'Lanjut',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
     );
   }
-  
+
   // Tampilan satu kartu pertanyaan
-  Widget _buildQuestionCard(Question question, int questionNumber, int totalQuestions) {
+  Widget _buildQuestionCard(
+    Question question,
+    int questionNumber,
+    int totalQuestions,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -294,21 +377,25 @@ class _QuizScreenState extends State<QuizScreen> {
             question.questionText,
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
-  
+
           const SizedBox(height: 24),
-          
+
           ...question.answers.map((Answer answer) {
-            bool isSelected = _selectedAnswers[question.questionId] == answer.answerId;
-            
+            bool isSelected =
+                _selectedAnswers[question.questionId] == answer.answerId;
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
               child: InkWell(
-                onTap: () => _onAnswerSelected(question.questionId, answer.answerId),
+                onTap: () =>
+                    _onAnswerSelected(question.questionId, answer.answerId),
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.deepPurple[50] : Colors.grey[100],
+                    color: isSelected
+                        ? Colors.deepPurple[50]
+                        : Colors.grey[100],
                     border: Border.all(
                       color: isSelected ? Colors.deepPurple : Colors.grey[300]!,
                       width: 2,
@@ -318,12 +405,19 @@ class _QuizScreenState extends State<QuizScreen> {
                   child: Row(
                     children: [
                       Icon(
-                        isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                        color: isSelected ? Colors.deepPurple : Colors.grey[600],
+                        isSelected
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        color: isSelected
+                            ? Colors.deepPurple
+                            : Colors.grey[600],
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: Text(answer.answerText, style: const TextStyle(fontSize: 16)),
+                        child: Text(
+                          answer.answerText,
+                          style: const TextStyle(fontSize: 16),
+                        ),
                       ),
                     ],
                   ),

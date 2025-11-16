@@ -14,6 +14,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  bool _blockingLoading = false; // Tambahkan variabel ini
+
   // --- Fungsi Edit Profil (Nama & Email) ---
   void _showEditProfileDialog(User user, List<Level> allLevels) {
     final formKey = GlobalKey<FormState>();
@@ -22,13 +24,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // Kita tidak izinkan edit role di sini, hanya nama & email
     // Jika siswa, kita izinkan ganti jenjang
     int? selectedLevelId = user.levelId;
-    
+
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           title: const Text('Edit Profil'),
-          content: StatefulBuilder( // Agar dropdown level bisa update
+          content: StatefulBuilder(
+            // Agar dropdown level bisa update
             builder: (context, setDialogState) {
               return SingleChildScrollView(
                 child: Form(
@@ -38,14 +41,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       TextFormField(
                         controller: nameController,
-                        decoration: const InputDecoration(labelText: 'Nama Lengkap'),
-                        validator: (val) => val!.isEmpty ? 'Nama tidak boleh kosong' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Lengkap',
+                        ),
+                        validator: (val) =>
+                            val!.isEmpty ? 'Nama tidak boleh kosong' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: emailController,
                         decoration: const InputDecoration(labelText: 'Email'),
-                        validator: (val) => val!.isEmpty || !val.contains('@') ? 'Email tidak valid' : null,
+                        validator: (val) => val!.isEmpty || !val.contains('@')
+                            ? 'Email tidak valid'
+                            : null,
                       ),
                       // Hanya tampilkan pilihan jenjang jika dia siswa
                       if (user.role == 'student') ...[
@@ -53,53 +61,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         DropdownButtonFormField<int>(
                           value: selectedLevelId,
                           hint: const Text('Pilih Jenjang'),
-                          items: allLevels.map((l) => DropdownMenuItem(value: l.levelId, child: Text(l.levelName))).toList(),
-                          onChanged: (val) => setDialogState(() => selectedLevelId = val),
-                          decoration: const InputDecoration(labelText: 'Jenjang'),
+                          items: allLevels
+                              .map(
+                                (l) => DropdownMenuItem(
+                                  value: l.levelId,
+                                  child: Text(l.levelName),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (val) =>
+                              setDialogState(() => selectedLevelId = val),
+                          decoration: const InputDecoration(
+                            labelText: 'Jenjang',
+                          ),
                         ),
-                      ]
+                      ],
                     ],
                   ),
                 ),
               );
-            }
+            },
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal'),
+            ),
             ElevatedButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
-                
+
                 try {
                   // Panggil API Update (kita bisa gunakan API Admin atau buat API khusus user)
                   // Untuk saat ini, kita gunakan API Admin (jika user adalah admin)
                   // atau kita perlu buat API baru di AuthController untuk 'updateProfile'
-                  
+
                   // NOTE: Kita belum buat API untuk 'update profile'
                   // Kita akan panggil 'adminUpdateUser' jika user-nya admin
                   // Ini harus diganti dengan API /profile/update yang lebih aman nanti
-                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  final auth = Provider.of<AuthProvider>(
+                    context,
+                    listen: false,
+                  );
                   if (auth.user?.role == 'admin') {
-                     await DataService(context).adminUpdateUser(
-                        userId: user.userId,
-                        fullName: nameController.text,
-                        email: emailController.text,
-                        role: user.role, // Role tidak diubah
-                        levelId: selectedLevelId,
-                      );
+                    await DataService(context).adminUpdateUser(
+                      userId: user.userId,
+                      fullName: nameController.text,
+                      email: emailController.text,
+                      role: user.role, // Role tidak diubah
+                      levelId: selectedLevelId,
+                    );
                   } else {
                     // TODO: Panggil API baru /profile/update
-                    throw Exception('Fitur update profil (non-admin) belum terhubung ke API.');
+                    throw Exception(
+                      'Fitur update profil (non-admin) belum terhubung ke API.',
+                    );
                   }
-                  
+
                   if (!mounted) return;
                   // Refresh data user di AuthProvider
-                  await auth.refreshUser(); 
+                  await auth.refreshUser();
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil berhasil diperbarui!'), backgroundColor: Colors.green));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Profil berhasil diperbarui!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
                 } catch (e) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               },
               child: const Text('Simpan'),
@@ -108,6 +144,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _blockingLoading = true);
+    try {
+      await Provider.of<AuthProvider>(context, listen: false).refreshUser();
+    } finally {
+      if (mounted) setState(() => _blockingLoading = false);
+    }
   }
 
   // --- Fungsi Logout ---
@@ -128,7 +173,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Navigator.of(ctx).pop(); // Tutup dialog
               Provider.of<AuthProvider>(context, listen: false).logout();
             },
-            child: const Text('Ya, Logout!', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Ya, Logout!',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -140,17 +188,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // Ambil data user dari AuthProvider
     final auth = Provider.of<AuthProvider>(context);
     final User? user = auth.user;
-    
+
     // Gunakan FutureBuilder untuk mengambil data Levels (dibutuhkan untuk form Edit)
     return FutureBuilder<List<Level>>(
       future: DataService(context).fetchLevels(), // Ambil data jenjang
       builder: (context, snapshot) {
-        if (!snapshot.hasData && snapshot.connectionState == ConnectionState.waiting) {
+        if (!snapshot.hasData &&
+            snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        
-        final allLevels = snapshot.data ?? []; // Daftar jenjang (meskipun kosong jika error)
-        
+
+        final allLevels =
+            snapshot.data ?? []; // Daftar jenjang (meskipun kosong jika error)
+
         if (user == null) {
           return const Center(child: Text('Gagal memuat data pengguna.'));
         }
@@ -166,14 +216,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     radius: 50,
                     backgroundColor: Colors.green.shade100,
                     child: Text(
-                      user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
+                      user.fullName.isNotEmpty
+                          ? user.fullName[0].toUpperCase()
+                          : '?',
                       style: TextStyle(fontSize: 48, color: Colors.green[800]),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     user.fullName,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -184,14 +239,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Chip(
                     label: Text(
                       user.role.toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     backgroundColor: Colors.green[700],
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 32),
             const Divider(),
             const SizedBox(height: 16),
@@ -210,7 +268,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: Icons.lock_outline,
               onTap: () {
                 // TODO: Navigasi ke halaman Ubah Password
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur Ubah Password belum dibuat.')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Fitur Ubah Password belum dibuat.'),
+                  ),
+                );
               },
             ),
 
@@ -234,17 +296,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // --- 4. Tombol Logout ---
             ElevatedButton.icon(
               icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text('LOGOUT', style: TextStyle(color: Colors.white)),
+              label: const Text(
+                'LOGOUT',
+                style: TextStyle(color: Colors.white),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[600],
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onPressed: _showLogoutDialog,
             ),
           ],
         );
-      }
+      },
     );
   }
 
@@ -254,13 +321,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Text(
         title,
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[600]),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey[600],
+        ),
       ),
     );
   }
 
   // Helper untuk Tombol/Tile Pengaturan
-  Widget _buildProfileTile({required String title, required IconData icon, required VoidCallback onTap}) {
+  Widget _buildProfileTile({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 1.5,

@@ -9,23 +9,12 @@ class MediaItem {
   final String url;
   final String type; // 'youtube' atau 'pdf'
 
-  MediaItem({
-    required this.title,
-    required this.url,
-    required this.type,
-  });
+  MediaItem({required this.title, required this.url, required this.type});
 
-  Map<String, dynamic> toJson() => {
-        'title': title,
-        'url': url,
-        'type': type,
-      };
+  Map<String, dynamic> toJson() => {'title': title, 'url': url, 'type': type};
 
-  factory MediaItem.fromJson(Map<String, dynamic> json) => MediaItem(
-        title: json['title'],
-        url: json['url'],
-        type: json['type'],
-      );
+  factory MediaItem.fromJson(Map<String, dynamic> json) =>
+      MediaItem(title: json['title'], url: json['url'], type: json['type']);
 }
 
 /// 🎬 Halaman pemutar video YouTube
@@ -52,10 +41,7 @@ class _YoutubeScreenState extends State<YoutubeScreen> {
     }
     _controller = YoutubePlayerController(
       initialVideoId: videoId,
-      flags: const YoutubePlayerFlags(
-        autoPlay: false,
-        enableCaption: true,
-      ),
+      flags: const YoutubePlayerFlags(autoPlay: false, enableCaption: true),
     )..addListener(_onVideoStateChanged);
   }
 
@@ -79,18 +65,24 @@ class _YoutubeScreenState extends State<YoutubeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('ID video YouTube tidak valid atau tautan tidak dikenali.', textAlign: TextAlign.center),
+                const Text(
+                  'ID video YouTube tidak valid atau tautan tidak dikenali.',
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
-                    onPressed: () async {
+                  onPressed: () async {
                     final uri = Uri.tryParse(widget.videoUrl);
                     if (uri != null) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
                   icon: const Icon(Icons.open_in_new),
                   label: const Text('Buka di browser'),
-                )
+                ),
               ],
             ),
           ),
@@ -99,7 +91,29 @@ class _YoutubeScreenState extends State<YoutubeScreen> {
     }
 
     return Scaffold(
-      appBar: _isFullScreen ? null : AppBar(title: const Text("Tonton Video")),
+      appBar: _isFullScreen
+          ? null
+          : AppBar(
+              title: const Text(
+                "Tonton Video",
+                style: TextStyle(color: Colors.white),
+              ),
+              centerTitle: true,
+              backgroundColor: Colors.transparent,
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 4, 31, 184),
+                      Color.fromARGB(255, 77, 80, 255),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+              iconTheme: IconThemeData(color: Colors.white),
+            ),
       body: YoutubePlayerBuilder(
         player: YoutubePlayer(
           controller: _controller!,

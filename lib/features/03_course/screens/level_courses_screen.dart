@@ -21,15 +21,34 @@ class _LevelCoursesScreenState extends State<LevelCoursesScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Panggil API baru kita
-    _coursesFuture = DataService(context).fetchCoursesByLevel(widget.level.levelId);
+    _coursesFuture = DataService(
+      context,
+    ).fetchCoursesByLevel(widget.level.levelId);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.level.levelName),
-        backgroundColor: Colors.green,
+        title: Text(
+          widget.level.levelName,
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder<List<Course>>(
         future: _coursesFuture,
@@ -41,11 +60,15 @@ class _LevelCoursesScreenState extends State<LevelCoursesScreen> {
             return Center(child: Text(snapshot.error.toString()));
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('Belum ada kursus untuk jenjang ${widget.level.levelName}.'));
+            return Center(
+              child: Text(
+                'Belum ada kursus untuk jenjang ${widget.level.levelName}.',
+              ),
+            );
           }
 
           final courses = snapshot.data!;
-          
+
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: courses.length,
@@ -60,7 +83,8 @@ class _LevelCoursesScreenState extends State<LevelCoursesScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => CourseDetailScreen(course: course),
+                        builder: (context) =>
+                            CourseDetailScreen(course: course),
                       ),
                     );
                   },

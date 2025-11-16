@@ -140,6 +140,8 @@ class _BrowseScreenState extends State<BrowseScreen>
               'Bahasa Indonesia',
               'Bahasa Inggris',
               'Matematika',
+              'Fisika',
+              'Umum',
             ];
             final subjects =
                 snapshot.data!.subjects
@@ -158,6 +160,7 @@ class _BrowseScreenState extends State<BrowseScreen>
             // final allCourses = snapshot.data!.allCourses; // currently unused
 
             return ListView(
+              padding: const EdgeInsets.all(16.0),
               children: [
                 AnimatedBuilder(
                   animation:
@@ -531,6 +534,12 @@ class _SubjectTile extends StatelessWidget {
     }
     if (name.contains('Sempoa')) {
       return ('assets/images/icon_sempoa.png', const Color(0xFFF4EFFF));
+    }
+    if (name.contains('Fisika')) {
+      return ('assets/images/icon_fisika.png', const Color(0xFFE8F4FF));
+    }
+    if (name.contains('Umum')) {
+      return ('assets/images/icon_umum.png', const Color(0xFFE8F4FF));
     }
     return ('assets/images/icon_default.png', const Color(0xFFF1F3F5));
   }

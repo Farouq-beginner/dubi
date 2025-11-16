@@ -32,8 +32,25 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Leaderboard Sempoa'),
-        backgroundColor: Colors.green,
+        title: const Text(
+          'Leaderboard Sempoa',
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder<List<LeaderboardItem>>(
         future: _future,
@@ -48,15 +65,24 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 48,
+                    ),
                     const SizedBox(height: 12),
                     Text('Gagal memuat leaderboard: ${snapshot.error}'),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
                       onPressed: _refresh,
                       icon: const Icon(Icons.refresh, color: Colors.white),
-                      label: const Text('Coba Lagi', style: TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                      label: const Text(
+                        'Coba Lagi',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                      ),
                     ),
                   ],
                 ),
@@ -88,10 +114,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 final isTop3 = rank <= 3;
                 final color = isTop3
                     ? (rank == 1
-                        ? const Color(0xFFFFD700)
-                        : rank == 2
-                            ? const Color(0xFFC0C0C0)
-                            : const Color(0xFFCD7F32))
+                          ? const Color(0xFFFFD700)
+                          : rank == 2
+                          ? const Color(0xFFC0C0C0)
+                          : const Color(0xFFCD7F32))
                     : Colors.green.shade50;
 
                 return Container(
@@ -107,77 +133,85 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       ),
                     ],
                   ),
-                    child: ListTile(
-                    contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     leading: CircleAvatar(
                       radius: 20,
                       backgroundColor: isTop3 ? color : Colors.green.shade100,
                       child: Text(
-                      '$rank',
-                      style: TextStyle(
-                        color: isTop3 ? Colors.black : Colors.green.shade900,
-                        fontWeight: FontWeight.bold,
-                      ),
+                        '$rank',
+                        style: TextStyle(
+                          color: isTop3 ? Colors.black : Colors.green.shade900,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     title: Row(
                       children: [
-                      Expanded(
-                        child: Text(
-                        item.userName,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                        overflow: TextOverflow.ellipsis,
+                        Expanded(
+                          child: Text(
+                            item.userName,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
                       ],
                     ),
                     subtitle: LayoutBuilder(
                       builder: (context, constraints) {
-                      // divide available width so each chip can shrink when needed
-                      final maxChipWidth = (constraints.maxWidth - 32) / 3;
-                      return Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: maxChipWidth),
-                          child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: _StatChip(
-                            icon: Icons.star,
-                            label: 'Level',
-                            value: '${item.highestLevel}',
-                          ),
-                          ),
-                        ),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: maxChipWidth),
-                          child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: _StatChip(
-                            icon: Icons.bolt,
-                            label: 'Skor',
-                            value: '${item.highScore}',
-                          ),
-                          ),
-                        ),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: maxChipWidth),
-                          child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: _StatChip(
-                            icon: Icons.local_fire_department,
-                            label: 'Streak',
-                            value: '${item.highestStreak}',
-                          ),
-                          ),
-                        ),
-                        ],
-                      );
+                        // divide available width so each chip can shrink when needed
+                        final maxChipWidth = (constraints.maxWidth - 32) / 3;
+                        return Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: maxChipWidth,
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: _StatChip(
+                                  icon: Icons.star,
+                                  label: 'Level',
+                                  value: '${item.highestLevel}',
+                                ),
+                              ),
+                            ),
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: maxChipWidth,
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: _StatChip(
+                                  icon: Icons.bolt,
+                                  label: 'Skor',
+                                  value: '${item.highScore}',
+                                ),
+                              ),
+                            ),
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: maxChipWidth,
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: _StatChip(
+                                  icon: Icons.local_fire_department,
+                                  label: 'Streak',
+                                  value: '${item.highestStreak}',
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
                       },
                     ),
                   ),
@@ -216,7 +250,10 @@ class _StatChip extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: Colors.green.shade700),
           const SizedBox(width: 4),
-          Text('$label: $value', style: TextStyle(color: Colors.green.shade900)),
+          Text(
+            '$label: $value',
+            style: TextStyle(color: Colors.green.shade900),
+          ),
         ],
       ),
     );

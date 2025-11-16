@@ -46,18 +46,23 @@ class _AddQuestionScreenState extends State<AddQuestionScreen> {
   // Fungsi untuk submit
   Future<void> _submitQuestion() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Validasi Pilihan Jawaban
     int correctCount = 0;
     List<Map<String, dynamic>> answersPayload = [];
-    
+
     for (var option in _answerOptions) {
       if (option.controller.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Semua pilihan jawaban harus diisi!'), backgroundColor: Colors.orange));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Semua pilihan jawaban harus diisi!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
         return;
       }
       if (option.isCorrect) correctCount++;
-      
+
       answersPayload.add({
         'answer_text': option.controller.text,
         'is_correct': option.isCorrect,
@@ -65,7 +70,12 @@ class _AddQuestionScreenState extends State<AddQuestionScreen> {
     }
 
     if (correctCount == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tandai minimal satu jawaban yang benar!'), backgroundColor: Colors.orange));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Tandai minimal satu jawaban yang benar!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
       return;
     }
 
@@ -83,7 +93,6 @@ class _AddQuestionScreenState extends State<AddQuestionScreen> {
       if (!mounted) return;
       // Kirim 'true' saat pop untuk menandakan sukses
       Navigator.of(context).pop(true);
-
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -100,8 +109,25 @@ class _AddQuestionScreenState extends State<AddQuestionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tambah Pertanyaan Baru'),
-        backgroundColor: Colors.deepPurple,
+        title: Text(
+          'Tambah Pertanyaan Baru',
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: Form(
         key: _formKey,
@@ -109,29 +135,39 @@ class _AddQuestionScreenState extends State<AddQuestionScreen> {
           padding: EdgeInsets.all(24),
           children: [
             // --- Pertanyaan ---
-            Text('Pertanyaan:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Pertanyaan:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             SizedBox(height: 8),
             TextFormField(
               controller: _questionController,
               decoration: _buildInputDecoration('Tulis pertanyaan di sini...'),
               maxLines: 4,
-              validator: (val) => val!.isEmpty ? 'Pertanyaan tidak boleh kosong' : null,
+              validator: (val) =>
+                  val!.isEmpty ? 'Pertanyaan tidak boleh kosong' : null,
             ),
             SizedBox(height: 24),
 
             // --- Pilihan Jawaban ---
-            Text('Pilihan Jawaban:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Pilihan Jawaban:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             SizedBox(height: 8),
-            
+
             ..._buildAnswerFields(),
-            
+
             // Tombol "Tambah Pilihan"
             TextButton.icon(
               icon: Icon(Icons.add_circle_outline, color: Colors.green),
-              label: Text('Tambah Pilihan Jawaban', style: TextStyle(color: Colors.green)),
+              label: Text(
+                'Tambah Pilihan Jawaban',
+                style: TextStyle(color: Colors.green),
+              ),
               onPressed: _addAnswerOption,
             ),
-            
+
             SizedBox(height: 32),
 
             // Tombol Submit
@@ -143,7 +179,10 @@ class _AddQuestionScreenState extends State<AddQuestionScreen> {
               ),
               child: _isLoading
                   ? CircularProgressIndicator(color: Colors.white)
-                  : Text('SIMPAN PERTANYAAN', style: TextStyle(color: Colors.white, fontSize: 16)),
+                  : Text(
+                      'SIMPAN PERTANYAAN',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
             ),
           ],
         ),
