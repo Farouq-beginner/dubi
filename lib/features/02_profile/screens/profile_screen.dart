@@ -5,6 +5,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/services/data_service.dart'; // <--- Import untuk Edit Profil
 import '../../../core/models/level_model.dart'; // <--- Import untuk Edit Profil
+import 'about_app_screen.dart'; // <--- Import untuk AboutAppScreen
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -288,7 +289,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildProfileTile(
               title: 'Tentang Aplikasi',
               icon: Icons.info_outline,
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AboutAppScreen(),
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 40),

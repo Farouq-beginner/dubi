@@ -82,6 +82,7 @@ flutter:
 
   assets:
     - assets/logo.png
+    - assets/logotentang.png
     - assets/images/app_icon.png
     - assets/images/icon_tk.png
     - assets/images/icon_sd.png
