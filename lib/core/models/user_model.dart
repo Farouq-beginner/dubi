@@ -7,6 +7,7 @@ class User {
   final String email;
   final String role;
   final int? levelId;
+  final String? profilePhotoPath; // Tambahkan properti ini
 
 
   User({
@@ -16,6 +17,7 @@ class User {
     required this.email,
     required this.role,
     this.levelId,
+    this.profilePhotoPath,
   });
 
   /// Factory constructor: Mengubah JSON (Map) dari API menjadi Objek User
@@ -28,6 +30,7 @@ class User {
       email: json['email'],
       role: json['role'],
       levelId: json['level_id'],
+      profilePhotoPath: json['profile_photo_path'],
     );
   }
 
@@ -40,6 +43,7 @@ class User {
       'email': email,
       'role': role,
       'level_id': levelId,
+      'profile_photo_path': profilePhotoPath,
     };
   }
 }

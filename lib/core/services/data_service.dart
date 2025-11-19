@@ -1,6 +1,7 @@
 // services/data_service.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import 'package:dio/dio.dart';
 
 // Import semua model dari core
@@ -44,6 +45,64 @@ String _handleDioError(DioException e, String defaultMessage) {
     }
     
     return defaultMessage; // Fallback
+  }
+
+  // ... (fungsi fetch, CRUD Teacher, dan Admin Anda) ...
+
+  // ------------------------------------------------------------------
+  // --- PROFILE Operations (Foto & Password) -------------------------
+  // ------------------------------------------------------------------
+
+  // [BARU] 1. Upload Foto Profil
+  Future<String> uploadProfilePhoto(File photo) async {
+    try {
+      String fileName = photo.path.split('/').last;
+      FormData formData = FormData.fromMap({
+        // 'photo' adalah nama field yang diharapkan oleh backend Laravel
+        "photo": await MultipartFile.fromFile(photo.path, filename: fileName),
+      });
+
+      final response = await _dio.post(
+        '/profile/update-photo', 
+        data: formData, // Kirim sebagai FormData
+      );
+
+      // Kembalikan URL foto baru
+      return response.data['data']['url'].toString();
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal mengunggah foto profil.');
+    }
+  }
+  
+  // [BARU] 2. Kirim Kode Verifikasi Password
+  Future<String> sendPasswordCode() async {
+    try {
+      final response = await _dio.post('/profile/send-password-code');
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal mengirim kode verifikasi.');
+    }
+  }
+
+  // [BARU] 3. Reset Password dengan Kode
+  Future<String> resetPasswordWithCode({
+    required String code,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/profile/reset-password-with-code',
+        data: {
+          'code': code,
+          'password': newPassword,
+          'password_confirmation': confirmPassword, // Wajib untuk validasi 'confirmed'
+        },
+      );
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal mengubah password.');
+    }
   }
 
   // ------------------------------------------------------------------
