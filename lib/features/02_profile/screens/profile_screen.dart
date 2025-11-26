@@ -5,9 +5,8 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/services/data_service.dart'; // <--- Import untuk Edit Profil
 import '../../../core/models/level_model.dart'; // <--- Import untuk Edit Profil
-import 'dart:io'; // Untuk File
-import 'package:image_picker/image_picker.dart'; // Untuk Image Picker
 import 'change_password_screen.dart'; // <-- Import layar Ubah Password
+import 'about_app_screen.dart'; // <--- Import untuk AboutAppScreen
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -18,31 +17,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _blockingLoading = false; // Tambahkan variabel ini
-
-// --- Logika Pilih dan Upload Foto ---
-  Future<void> _pickImage(User user) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
-
-    if (pickedFile != null) {
-      File imageFile = File(pickedFile.path);
-      setState(() {}); // Untuk menampilkan loading indicator jika ada
-      
-      try {
-        final newPhotoUrl = await DataService(context).uploadProfilePhoto(imageFile);
-        if (!mounted) return;
-        
-        // Panggil refresh user di AuthProvider untuk mengambil data baru
-        await Provider.of<AuthProvider>(context, listen: false).refreshUser();
-        
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto berhasil diunggah!'), backgroundColor: Colors.green));
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
-      }
-      setState(() {}); // Hentikan loading
-    }
-  }
 
   // --- Fungsi Edit Profil (Nama & Email) ---
   void _showEditProfileDialog(User user, List<Level> allLevels) {
@@ -239,24 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // --- 1. Header Profil ---
             Center(
               child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: () => _pickImage(user), // Panggil fungsi upload
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.green.shade100,
-                      backgroundImage: user.profilePhotoPath != null && user.profilePhotoPath!.isNotEmpty
-                          ? NetworkImage('http://127.0.0.1:8000/storage/${user.profilePhotoPath}') as ImageProvider
-                          : null,
-                      child: user.profilePhotoPath == null || user.profilePhotoPath!.isEmpty
-                          ? Text(
-                              user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
-                              style: TextStyle(fontSize: 48, color: Colors.green[800]),
-                            )
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                children: [SizedBox(height: 16),
                   Text(
                     user.fullName,
                     style: const TextStyle(
@@ -298,7 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             _buildProfileTile(
-              title: 'Ubah Password',
+              title: 'Ganti Password',
               icon: Icons.lock_outline,
               onTap: () {
                 // Navigasi ke layar Ubah Password
@@ -321,7 +278,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildProfileTile(
               title: 'Tentang Aplikasi',
               icon: Icons.info_outline,
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AboutAppScreen(),
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 40),

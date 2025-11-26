@@ -1,7 +1,6 @@
 // services/data_service.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
 import 'package:dio/dio.dart';
 
 // Import semua model dari core
@@ -28,22 +27,24 @@ class DataService {
     _dio = Provider.of<AuthProvider>(context, listen: false).dio;
   }
 
-String _handleDioError(DioException e, String defaultMessage) {
+  String _handleDioError(DioException e, String defaultMessage) {
     // Cek jika respons adalah Map DAN memiliki 'message'
-    if (e.response != null && e.response!.data is Map && e.response!.data.containsKey('message')) {
+    if (e.response != null &&
+        e.response!.data is Map &&
+        e.response!.data.containsKey('message')) {
       return e.response!.data['message'].toString();
     }
-    
+
     // Jika respons adalah 403 (HTML), beri pesan generik
     if (e.response?.statusCode == 403) {
       return 'Akses ditolak. Anda tidak memiliki izin.';
     }
-    
+
     // Jika 500 atau error lainnya (HTML), beri pesan server error
     if (e.response?.statusCode == 500) {
       return 'Terjadi kesalahan internal pada server.';
     }
-    
+
     return defaultMessage; // Fallback
   }
 
@@ -53,38 +54,51 @@ String _handleDioError(DioException e, String defaultMessage) {
   // --- PROFILE Operations (Foto & Password) -------------------------
   // ------------------------------------------------------------------
 
-  // [BARU] 1. Upload Foto Profil
-  Future<String> uploadProfilePhoto(File photo) async {
+  // 1. Request Kode Verifikasi ke Email
+  Future<String> sendPasswordCode() async {
+    // Simpan timeout asli agar tidak mengganggu request lain yang berjalan paralel
+    final originalConnect = _dio.options.connectTimeout;
+    final originalSend = _dio.options.sendTimeout;
+    final originalReceive = _dio.options.receiveTimeout;
     try {
-      String fileName = photo.path.split('/').last;
-      FormData formData = FormData.fromMap({
-        // 'photo' adalah nama field yang diharapkan oleh backend Laravel
-        "photo": await MultipartFile.fromFile(photo.path, filename: fileName),
-      });
+      // Perlu perpanjang SEMUA: connectTimeout (fase handshake), sendTimeout (mengirim body), receiveTimeout (menunggu respons)
+      // Jika hanya receiveTimeout, koneksi bisa gagal lebih dulu di connectTimeout 5 detik.
+      _dio.options.connectTimeout = const Duration(seconds: 30);
+      _dio.options.sendTimeout = const Duration(seconds: 30);
+      _dio.options.receiveTimeout = const Duration(seconds: 30);
 
+      // Alternatif yang lebih aman (tidak ubah global) adalah Options(...), tapi kita sudah simpan & restore.
       final response = await _dio.post(
-        '/profile/update-photo', 
-        data: formData, // Kirim sebagai FormData
+        '/profile/send-password-code',
+        // Per-request Options (tanpa connectTimeout karena hanya tersedia di BaseOptions)
+        options: Options(
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
       );
 
-      // Kembalikan URL foto baru
-      return response.data['data']['url'].toString();
+      // Cek apakah ada key 'message'
+      if (response.data is Map && response.data['message'] != null) {
+        return response.data['message'].toString();
+      }
+      return 'Kode berhasil dikirim.'; // Fallback jika struktur tidak sesuai
     } on DioException catch (e) {
-      throw _handleDioError(e, 'Gagal mengunggah foto profil.');
-    }
-  }
-  
-  // [BARU] 2. Kirim Kode Verifikasi Password
-  Future<String> sendPasswordCode() async {
-    try {
-      final response = await _dio.post('/profile/send-password-code');
-      return response.data['message'];
-    } on DioException catch (e) {
+      // Jika timeout terjadi, kemungkinan email tetap diproses server (non-blocking)
+      if (e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw 'Koneksi lambat, silakan cek email. Jika belum ada, coba lagi.';
+      }
       throw _handleDioError(e, 'Gagal mengirim kode verifikasi.');
+    } finally {
+      // Kembalikan konfigurasi global ke nilai sebelumnya agar request lain tetap cepat
+      _dio.options.connectTimeout = originalConnect;
+      _dio.options.sendTimeout = originalSend;
+      _dio.options.receiveTimeout = originalReceive;
     }
   }
 
-  // [BARU] 3. Reset Password dengan Kode
+  // 2. Reset Password (Kirim Kode + Password Baru)
   Future<String> resetPasswordWithCode({
     required String code,
     required String newPassword,
@@ -96,7 +110,7 @@ String _handleDioError(DioException e, String defaultMessage) {
         data: {
           'code': code,
           'password': newPassword,
-          'password_confirmation': confirmPassword, // Wajib untuk validasi 'confirmed'
+          'password_confirmation': confirmPassword,
         },
       );
       return response.data['message'];
@@ -516,11 +530,11 @@ String _handleDioError(DioException e, String defaultMessage) {
     }
   }
 
-// ------------------------------------------------------------------
+  // ------------------------------------------------------------------
   // --- ADMIN Operations -------------------------------------------
   // ------------------------------------------------------------------
 
-// Fitur 1: (Read) Melihat Semua Pengguna
+  // Fitur 1: (Read) Melihat Semua Pengguna
   Future<List<User>> adminGetUsers() async {
     try {
       final response = await _dio.get('/admin/users');
@@ -583,7 +597,7 @@ String _handleDioError(DioException e, String defaultMessage) {
           'title': title,
           'description': description,
           'level_id': levelId,
-          'subject_id': subjectId
+          'subject_id': subjectId,
         },
       );
       return response.data['message'];
@@ -639,7 +653,7 @@ String _handleDioError(DioException e, String defaultMessage) {
         data: {
           'title': title,
           'content_type': contentType,
-          'content_body': contentBody
+          'content_body': contentBody,
         },
       );
       return response.data['message'];
@@ -672,7 +686,7 @@ String _handleDioError(DioException e, String defaultMessage) {
           'title': title,
           'description': description,
           'duration': duration,
-          'module_id': moduleId
+          'module_id': moduleId,
         },
       );
       return response.data['message'];
@@ -703,7 +717,7 @@ String _handleDioError(DioException e, String defaultMessage) {
         data: {
           'question_text': questionText,
           'question_type': questionType,
-          'answers': answers
+          'answers': answers,
         },
       );
       return response.data['message'];
@@ -721,45 +735,44 @@ String _handleDioError(DioException e, String defaultMessage) {
     }
   }
 
-
-// --- [BARU] Sempoa Operations ---
-    Future<SempoaProgress> fetchSempoaProgress() async {
-        try {
-            final response = await _dio.get('/sempoa/progress');
-            return SempoaProgress.fromJson(response.data['data']);
-        } on DioException catch (e) {
-            throw _handleDioError(e, 'Gagal memuat progres Sempoa.');
-        }
+  // --- [BARU] Sempoa Operations ---
+  Future<SempoaProgress> fetchSempoaProgress() async {
+    try {
+      final response = await _dio.get('/sempoa/progress');
+      return SempoaProgress.fromJson(response.data['data']);
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memuat progres Sempoa.');
     }
-    
+  }
+
   Future<String> saveSempoaProgress({
-        required int newScore,
-        required int newLevel,
-        required int newStreak, // <-- TAMBAHKAN INI
-    }) async {
-        try {
-            final response = await _dio.post(
-                '/sempoa/progress',
-                data: {
-                    'new_score': newScore,
-                    'new_level': newLevel,
-                    'new_streak': newStreak,
-                },
-            );
-            return response.data['message'];
-        } on DioException catch (e) {
-            throw _handleDioError(e, 'Gagal menyimpan progres Sempoa.');
-        }
+    required int newScore,
+    required int newLevel,
+    required int newStreak, // <-- TAMBAHKAN INI
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/sempoa/progress',
+        data: {
+          'new_score': newScore,
+          'new_level': newLevel,
+          'new_streak': newStreak,
+        },
+      );
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal menyimpan progres Sempoa.');
     }
+  }
 
-    // --- [BARU] Fetch Sempoa Leaderboard ---
-    Future<List<LeaderboardItem>> fetchSempoaLeaderboard() async {
-        try {
-            final response = await _dio.get('/sempoa/leaderboard');
-            List<dynamic> data = response.data['data'];
-            return data.map((json) => LeaderboardItem.fromJson(json)).toList();
-        } on DioException catch (e) {
-            throw _handleDioError(e, 'Gagal memuat Leaderboard Sempoa.');
-        }
+  // --- [BARU] Fetch Sempoa Leaderboard ---
+  Future<List<LeaderboardItem>> fetchSempoaLeaderboard() async {
+    try {
+      final response = await _dio.get('/sempoa/leaderboard');
+      List<dynamic> data = response.data['data'];
+      return data.map((json) => LeaderboardItem.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memuat Leaderboard Sempoa.');
     }
+  }
 }

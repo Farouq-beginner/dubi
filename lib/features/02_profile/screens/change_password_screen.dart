@@ -1,29 +1,27 @@
-// lib/features/02_profile/screens/change_password_screen.dart
 import 'package:flutter/material.dart';
 import '../../../core/services/data_service.dart';
 
-// Enum untuk mengelola langkah-langkah dalam flow
-enum PasswordFlowStep { sendCode, verifyCode, setNewPassword }
-
 class ChangePasswordScreen extends StatefulWidget {
-  const ChangePasswordScreen({super.key});
+  const ChangePasswordScreen({Key? key}) : super(key: key);
 
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
-  PasswordFlowStep _currentStep = PasswordFlowStep.sendCode;
-  late DataService _dataService;
-  
-  // Controllers
+  // Controller
   final _codeController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  final _passController = TextEditingController();
+  final _confirmPassController = TextEditingController();
+  
   final _formKey = GlobalKey<FormState>();
+  late DataService _dataService;
 
-  bool _showPassword = false;
+  // State UI
+  bool _isCodeSent = false; // Apakah kode sudah dikirim?
   bool _isLoading = false;
+  bool _obscurePass = true;
+  bool _obscureConfirm = true;
 
   @override
   void initState() {
@@ -31,48 +29,75 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     _dataService = DataService(context);
   }
 
-  // --- Logic Step 1: Kirim Kode ---
-  Future<void> _sendCode() async {
+  @override
+  void dispose() {
+    _codeController.dispose();
+    _passController.dispose();
+    _confirmPassController.dispose();
+    super.dispose();
+  }
+
+  // --- Logic 1: Kirim Kode ---
+Future<void> _sendCode() async {
     setState(() => _isLoading = true);
     try {
       final message = await _dataService.sendPasswordCode();
+      
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.green));
-      setState(() => _currentStep = PasswordFlowStep.verifyCode);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.green),
+      );
+
+      // BERHASIL: Pindah ke tampilan verifikasi
+      setState(() {
+        _isCodeSent = true; // <-- INI YANG AKAN MEMBUKA FORM RESET PASSWORD
+      });
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+      if (!mounted) return;
+      
+      // Jika terjadi error (misalnya timeout), tetap tampilkan error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
+      
+      // [PERBAIKAN] Tambahkan opsi untuk pindah manual jika yakin kode sudah terkirim
+      if (e.toString().contains('Koneksi lambat')) { // Berdasarkan pesan error yang kita buat
+         setState(() {
+            _isCodeSent = true; 
+         });
+      }
+      
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // --- Logic Step 2: Verifikasi Kode ---
-  void _verifyCode() {
-    // Di sini kita hanya berpindah ke langkah 3 jika kode diisi (asumsi kode benar)
-    // Validasi kode akan dilakukan di langkah 3 oleh backend
-    if (_codeController.text.length == 6) {
-      setState(() => _currentStep = PasswordFlowStep.setNewPassword);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kode harus 6 digit.'), backgroundColor: Colors.orange));
-    }
-  }
-
-  // --- Logic Step 3: Reset Password ---
-  Future<void> _resetPassword() async {
+  // --- Logic 2: Simpan Password Baru ---
+  Future<void> _submitNewPassword() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
     try {
       final message = await _dataService.resetPasswordWithCode(
         code: _codeController.text,
-        newPassword: _passwordController.text,
-        confirmPassword: _confirmPasswordController.text,
+        newPassword: _passController.text,
+        confirmPassword: _confirmPassController.text,
       );
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.green));
-      Navigator.of(context).pop(); // Kembali ke Profile Screen
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.green),
+      );
+      
+      // Kembali ke halaman profil setelah sukses
+      Navigator.pop(context);
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -80,123 +105,142 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Widget content;
-    String title;
-
-    switch (_currentStep) {
-      case PasswordFlowStep.sendCode:
-        title = 'Kirim Kode Verifikasi';
-        content = _buildSendCodeStep();
-        break;
-      case PasswordFlowStep.verifyCode:
-        title = 'Masukkan Kode (Langkah 2/3)';
-        content = _buildVerifyCodeStep();
-        break;
-      case PasswordFlowStep.setNewPassword:
-        title = 'Buat Password Baru (Langkah 3/3)';
-        content = _buildSetNewPasswordStep();
-        break;
-    }
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.deepPurple,
+        title: const Text('Ganti Password'),
+        backgroundColor: Colors.green,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: content,
-        ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: _isCodeSent ? _buildResetForm() : _buildSendCodeView(),
       ),
-    );
-  }
-  
-  // --- UI Step 1: Kirim Kode ---
-  Widget _buildSendCodeStep() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text('Kami akan mengirim kode verifikasi ke email Anda yang terdaftar.', textAlign: TextAlign.center),
-        const SizedBox(height: 32),
-        ElevatedButton.icon(
-          onPressed: _isLoading ? null : _sendCode,
-          icon: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.email_outlined),
-          label: Text(_isLoading ? 'Mengirim...' : 'Kirim Kode', style: const TextStyle(fontSize: 16)),
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
-        ),
-      ],
     );
   }
 
-  // --- UI Step 2: Verifikasi Kode ---
-  Widget _buildVerifyCodeStep() {
+  // Tampilan 1: Tombol Kirim Kode
+  Widget _buildSendCodeView() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text('Cek kotak masuk Anda. Masukkan 6 digit kode yang kami kirimkan.', textAlign: TextAlign.center),
+        const Icon(Icons.mark_email_read_outlined, size: 80, color: Colors.green),
+        const SizedBox(height: 24),
+        const Text(
+          'Demi keamanan, kami perlu memverifikasi email Anda.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Tekan tombol di bawah untuk menerima Kode Verifikasi.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14, color: Colors.grey),
+        ),
         const SizedBox(height: 32),
-        TextField(
-          controller: _codeController,
-          keyboardType: TextInputType.number,
-          maxLength: 6,
-          decoration: const InputDecoration(
-            labelText: 'Kode Verifikasi',
-            border: OutlineInputBorder(),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _sendCode,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: _isLoading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text('Kirim Kode Verifikasi', style: TextStyle(fontSize: 16, color: Colors.white)),
           ),
         ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _codeController.text.length == 6 ? _verifyCode : null,
-          child: const Text('Verifikasi'),
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-        ),
       ],
     );
   }
 
-  // --- UI Step 3: Set Password Baru ---
-  Widget _buildSetNewPasswordStep() {
+  // Tampilan 2: Form Input Kode & Password
+  Widget _buildResetForm() {
     return Form(
       key: _formKey,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text(
+            'Kode Verifikasi telah dikirim ke email Anda.',
+            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          
+          // 1. Input Kode
           TextFormField(
-            controller: _passwordController,
-            obscureText: !_showPassword, // Sembunyikan teks
+            controller: _codeController,
+            keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              labelText: 'Password Baru (min. 8)',
-              border: const OutlineInputBorder(),
+              labelText: 'Kode Verifikasi (6 Digit)',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              prefixIcon: const Icon(Icons.vpn_key),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Kode wajib diisi';
+              if (value.length < 6) return 'Kode harus 6 digit';
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // 2. Password Baru
+          TextFormField(
+            controller: _passController,
+            obscureText: _obscurePass,
+            decoration: InputDecoration(
+              labelText: 'Password Baru',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              prefixIcon: const Icon(Icons.lock),
               suffixIcon: IconButton(
-                icon: Icon(_showPassword ? Icons.visibility : Icons.visibility_off),
-                onPressed: () {
-                  setState(() => _showPassword = !_showPassword);
-                },
+                icon: Icon(_obscurePass ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _obscurePass = !_obscurePass),
               ),
             ),
-            validator: (val) {
-              if (val == null || val.length < 8) return 'Password minimal 8 karakter';
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Password wajib diisi';
+              if (value.length < 8) return 'Minimal 8 karakter';
               return null;
             },
           ),
           const SizedBox(height: 16),
+
+          // 3. Konfirmasi Password
           TextFormField(
-            controller: _confirmPasswordController,
-            obscureText: !_showPassword,
-            decoration: const InputDecoration(
-              labelText: 'Konfirmasi Password Baru',
-              border: OutlineInputBorder(),
+            controller: _confirmPassController,
+            obscureText: _obscureConfirm,
+            decoration: InputDecoration(
+              labelText: 'Ulangi Password Baru',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              prefixIcon: const Icon(Icons.lock_outline),
+              suffixIcon: IconButton(
+                icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+              ),
             ),
-            validator: (val) {
-              if (val != _passwordController.text) return 'Konfirmasi password tidak cocok';
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Konfirmasi password wajib diisi';
+              if (value != _passController.text) return 'Password tidak sama';
               return null;
             },
           ),
+          
           const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _resetPassword,
-            child: Text(_isLoading ? 'Mengubah...' : 'Ubah Password', style: const TextStyle(fontSize: 16)),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+
+          // Tombol Simpan
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _submitNewPassword,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Simpan Password Baru', style: TextStyle(fontSize: 16, color: Colors.white)),
+            ),
           ),
         ],
       ),
