@@ -7,6 +7,7 @@ import '../../../core/services/data_service.dart'; // <--- Import untuk Edit Pro
 import '../../../core/models/level_model.dart'; // <--- Import untuk Edit Profil
 import 'change_password_screen.dart'; // <-- Import layar Ubah Password
 import 'about_app_screen.dart'; // <--- Import untuk AboutAppScreen
+import '../../00_auth/screens/login_screen.dart'; // <-- Import layar Login
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -174,6 +175,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () {
               Navigator.of(ctx).pop(); // Tutup dialog
               Provider.of<AuthProvider>(context, listen: false).logout();
+              Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginScreen()), 
+                  (route) => false);
             },
             child: const Text(
               'Ya, Logout!',

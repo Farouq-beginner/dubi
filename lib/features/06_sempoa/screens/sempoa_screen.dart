@@ -49,10 +49,8 @@ class _SempoaScreenState extends State<SempoaScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            // Tampilkan error jika API gagal
-            return Center(
-              child: Text('Gagal memuat Sempoa: ${snapshot.error}'),
-            );
+            // Tampilkan error jika API gagal (pesan dari DataService saja)
+            return Center(child: Text('${snapshot.error}'));
           }
           if (!snapshot.hasData) {
             return const Center(child: Text('Data progres tidak ditemukan.'));

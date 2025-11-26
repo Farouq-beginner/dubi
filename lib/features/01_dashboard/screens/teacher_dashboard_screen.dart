@@ -47,7 +47,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return Center(child: Text(snapshot.error.toString()));
+              return const Center(child: Text('Gagal memuat dashboard.'));
             }
             final courses = snapshot.data ?? const <Course>[];
 

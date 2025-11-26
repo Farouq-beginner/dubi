@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/providers/auth_provider.dart'; // Sesuaikan path
 import 'features/00_auth/screens/splash_screen.dart'; // Import SplashScreen
+import 'features/00_auth/screens/smart_splash_screen.dart'; // Import SmartSplashScreen
 
 void main() {
   runApp(
@@ -21,8 +22,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'DuBI App',
       theme: ThemeData(primarySwatch: Colors.green, fontFamily: 'Arial'),
-      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
+      home: SmartSplashScreen(), // Gunakan SmartSplashScreen sebagai layar awal
     );
   }
 }

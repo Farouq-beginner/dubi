@@ -1,147 +1,185 @@
+// lib/features/00_auth/screens/forgot_password_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/data_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  _ForgotPasswordScreenState createState() => _ForgotPasswordScreenState();
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
-  bool _isLoading = false;
+  final _codeController = TextEditingController();
+  final _passController = TextEditingController();
+  final _confirmController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
-  Future<void> _handleForgotPassword() async {
-    if (_emailController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Masukkan email Anda'),
-          backgroundColor: Colors.red,
-        ),
-      );
+  bool _isCodeSent = false; // Tahap 1 vs Tahap 2
+  bool _isLoading = false;
+  bool _obscurePass = true;
+
+  // Tahap 1: Kirim Email
+  Future<void> _sendCode() async {
+    if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Masukkan email yang valid')));
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      await Provider.of<AuthProvider>(
-        context,
-        listen: false,
-      ).forgotPassword(_emailController.text);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Link reset password telah dikirim ke email Anda'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.of(context).pop(); // Kembali ke login
+      final msg = await DataService(context).forgotPasswordSendCode(_emailController.text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
+      setState(() => _isCodeSent = true); // Pindah ke tahap input kode
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // Tahap 2: Reset Password
+  Future<void> _resetPassword() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final msg = await DataService(context).forgotPasswordReset(
+        email: _emailController.text,
+        code: _codeController.text,
+        newPassword: _passController.text,
+        confirmPassword: _confirmController.text,
+      );
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
+      
+      Navigator.pop(context); // Kembali ke Login
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[50],
       appBar: AppBar(
         title: const Text('Lupa Password'),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.white,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color.fromARGB(255, 4, 31, 184),
-                Color.fromARGB(255, 77, 80, 255),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+        backgroundColor: Colors.green,
       ),
-      body: SafeArea(
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.lock_reset,
-                  size: 100,
-                  color: Color.fromARGB(255, 4, 31, 184),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Reset Password',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 4, 31, 184),
-                  ),
-                ),
-                const Text(
-                  'Masukkan email Anda untuk menerima link reset password',
-                  style: TextStyle(fontSize: 18, color: Colors.black54),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
-                TextField(
-                  controller: _emailController,
-                  decoration: _buildInputDecoration('Email Anda'),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 32),
-                if (_isLoading)
-                  const CircularProgressIndicator()
-                else
-                  ElevatedButton(
-                    onPressed: _handleForgotPassword,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color.fromARGB(255, 4, 31, 184),
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    child: const Text(
-                      'KIRIM LINK RESET',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
-              ],
-            ),
+            child: _isCodeSent ? _buildResetForm() : _buildEmailForm(),
           ),
         ),
       ),
     );
   }
 
-  InputDecoration _buildInputDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(color: Color.fromARGB(255, 4, 31, 184)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(
-          color: Color.fromARGB(255, 4, 31, 184),
-          width: 2,
+  Widget _buildEmailForm() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.lock_reset, size: 80, color: Colors.green),
+        const SizedBox(height: 24),
+        const Text(
+          'Masukkan email Anda untuk menerima kode verifikasi.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16),
         ),
+        const SizedBox(height: 32),
+        TextField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(
+            labelText: 'Email',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.email),
+          ),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _sendCode,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: _isLoading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text('Kirim Kode', style: TextStyle(color: Colors.white, fontSize: 16)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResetForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          const Text('Kode terkirim! Masukkan kode dan password baru.', textAlign: TextAlign.center),
+          const SizedBox(height: 24),
+          // Input Email (Read Only)
+          TextField(
+            controller: _emailController,
+            readOnly: true,
+            decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder(), filled: true),
+          ),
+          const SizedBox(height: 16),
+          // Input Kode
+          TextFormField(
+            controller: _codeController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Kode Verifikasi', border: OutlineInputBorder()),
+            validator: (v) => v!.length < 6 ? 'Kode harus 6 digit' : null,
+          ),
+          const SizedBox(height: 16),
+          // Password Baru
+          TextFormField(
+            controller: _passController,
+            obscureText: _obscurePass,
+            decoration: InputDecoration(
+              labelText: 'Password Baru',
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePass ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obscurePass = !_obscurePass),
+              ),
+            ),
+            validator: (v) => v!.length < 8 ? 'Min 8 karakter' : null,
+          ),
+          const SizedBox(height: 16),
+          // Konfirmasi
+          TextFormField(
+            controller: _confirmController,
+            obscureText: _obscurePass,
+            decoration: const InputDecoration(labelText: 'Konfirmasi Password', border: OutlineInputBorder()),
+            validator: (v) => v != _passController.text ? 'Password tidak sama' : null,
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _resetPassword,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Reset Password', style: TextStyle(color: Colors.white, fontSize: 16)),
+            ),
+          ),
+        ],
       ),
     );
   }

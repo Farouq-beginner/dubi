@@ -1,12 +1,17 @@
+// lib/features/00_auth/screens/login_screen.dart
 import 'dart:convert';
+import 'dart:io'; // Untuk deteksi Platform
+import 'package:flutter/foundation.dart'; // Untuk kIsWeb
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../../core/providers/auth_provider.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../99_main_container/screens/main_container_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,54 +25,66 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _updateRequired = false; // 🔒 jika true, login dikunci
+  bool _updateRequired = false; 
 
   @override
   void initState() {
     super.initState();
-    _checkAppUpdate();
+    // Jalankan cek update setelah frame pertama
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAppUpdate();
+    });
   }
 
-  // 🔍 Cek versi ke API Laravel
+  // 🔍 Cek versi (Logika Lokal)
   Future<void> _checkAppUpdate() async {
     try {
       print('🔍 Memeriksa update...');
       final packageInfo = await PackageInfo.fromPlatform();
       int currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
 
+      // Tentukan URL berdasarkan Platform (Android Emulator butuh 10.0.2.2)
+      String baseUrl = 'http://127.0.0.1:8000';
+      if (!kIsWeb && Platform.isAndroid) {
+        baseUrl = 'http://10.0.2.2:8000';
+      }
+
       final response = await http.get(Uri.parse(
-        'http://127.0.0.1:8000/api/check-update?build_number=$currentBuild',
-      ));
+        '$baseUrl/api/check-update?build_number=$currentBuild',
+      )).timeout(const Duration(seconds: 5)); // Tambah timeout agar tidak hang
 
       print('📥 Status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('📦 Body: $data');
+        
+        // [PERBAIKAN] Pastikan data adalah Map dan tidak null
+        if (data != null && data is Map<String, dynamic>) {
+          print('📦 Body: $data');
 
-        int latestBuild = int.tryParse(data['latest_build'].toString()) ?? 1;
-        bool forceUpdate = data['update_required'] ?? false;
-        String downloadUrl = data['download_url'] ?? '';
-        String changelog = data['changelog'] ?? '';
+          // Ambil data dengan aman (menggunakan ?.)
+          int latestBuild = int.tryParse(data['latest_build']?.toString() ?? '0') ?? 0;
+          bool forceUpdate = data['update_required'] ?? false;
+          String downloadUrl = data['download_url'] ?? '';
+          String changelog = data['changelog'] ?? 'Pembaruan tersedia.';
 
-        print(
-          '📱 Current build: $currentBuild | 🔄 Latest build: $latestBuild',
-        );
+          print('📱 Current: $currentBuild | 🔄 Latest: $latestBuild');
 
-        if (forceUpdate && latestBuild > currentBuild) {
-          setState(() => _updateRequired = true);
-
-          // 🔒 tampilkan dialog wajib update (tidak bisa ditutup)
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          // Logika membandingkan versi
+          if (forceUpdate && latestBuild > currentBuild) {
+            if (!mounted) return;
+            setState(() => _updateRequired = true);
             _showForceUpdateDialog(downloadUrl, changelog);
-          });
-        } else {
-          print('✅ Aplikasi sudah versi terbaru.');
+          } else {
+            print('✅ Aplikasi sudah versi terbaru.');
+          }
         }
       } else {
-        print('⚠️ Gagal cek update.');
+        print('⚠️ Gagal cek update: Server error ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error cek update: $e');
+      // Error jaringan (misal offline) diabaikan agar user tetap bisa login
+      print('❌ Error cek update (Diabaikan): $e');
     }
   }
 
@@ -75,29 +92,37 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       barrierDismissible: false, // ❌ tidak bisa ditutup manual
-      builder: (context) => WillPopScope(
-        onWillPop: () async => false, // ❌ tidak bisa tekan back
+      builder: (context) => PopScope(
+        canPop: false, // ❌ Mencegah tombol back Android
         child: AlertDialog(
           title: const Text(
             '⚠️ Pembaruan Diperlukan',
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
           ),
-          content: Text(changelog),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Versi baru tersedia! Anda harus memperbarui aplikasi untuk melanjutkan.'),
+              const SizedBox(height: 10),
+              const Text('Apa yang baru:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(changelog),
+            ],
+          ),
           actions: [
             ElevatedButton.icon(
               onPressed: () async {
-                final uri = Uri.parse(url);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                if (url.isNotEmpty) {
+                  final uri = Uri.parse(url);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
                 }
               },
               icon: const Icon(Icons.download, color: Colors.white),
-              label: const Text(
-                'Unduh Sekarang',
-                style: TextStyle(color: Colors.white),
-              ),
+              label: const Text('Unduh Sekarang', style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color.fromARGB(255, 4, 31, 184),
+                backgroundColor: const Color.fromARGB(255, 4, 31, 184),
               ),
             ),
           ],
@@ -108,31 +133,50 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // 🔑 Login
   Future<void> _handleLogin() async {
+    // 1. Cek Update Required
     if (_updateRequired) {
-      // 🚫 Blokir login jika update wajib
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Silakan perbarui aplikasi ke versi terbaru untuk melanjutkan.',
-          ),
+          content: Text('Silakan perbarui aplikasi ke versi terbaru untuk melanjutkan.'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
+    // 2. Validasi Input
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email dan Password wajib diisi'), backgroundColor: Colors.orange),
+        );
+        return;
+    }
+
     setState(() => _isLoading = true);
+    
     try {
+      // 3. Panggil Provider Login
       await Provider.of<AuthProvider>(
         context,
         listen: false,
       ).login(_emailController.text, _passwordController.text);
+      
+      if (!mounted) return;
+
+      // 4. Navigasi Sukses (Hapus route history agar tidak bisa back ke login)
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const MainContainerScreen()),
+        (route) => false,
+      );
+
     } catch (e) {
+      // 5. Handle Error Login
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -147,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.school,
                   size: 100,
                   color: Color.fromARGB(255, 4, 31, 184),
@@ -171,8 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _emailController,
                   decoration: _buildInputDecoration('Email kamu'),
                   keyboardType: TextInputType.emailAddress,
-                  enabled:
-                      !_updateRequired, // ❌ nonaktifkan input jika wajib update
+                  enabled: !_updateRequired, 
                 ),
                 const SizedBox(height: 16),
 
@@ -186,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         _obscurePassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: Color.fromARGB(255, 4, 31, 184),
+                        color: const Color.fromARGB(255, 4, 31, 184),
                       ),
                       onPressed: () {
                         setState(() {
@@ -196,19 +239,41 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+
+                 // Tombol Lupa Password
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _updateRequired
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
+                    child: const Text(
+                      'Lupa Password?',
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 4, 31, 184),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
 
                 if (_isLoading)
                   const CircularProgressIndicator()
                 else
                   ElevatedButton(
-                    onPressed: _updateRequired
-                        ? null
-                        : _handleLogin, // 🚫 tidak aktif saat wajib update
+                    onPressed: _updateRequired ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _updateRequired
                           ? Colors.grey
-                          : Color.fromARGB(255, 4, 31, 184),
+                          : const Color.fromARGB(255, 4, 31, 184),
                       minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -222,44 +287,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                TextButton(
-                  onPressed: _updateRequired
-                      ? null
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterScreen(),
-                            ),
-                          );
-                        },
-                  child: const Text(
-                    'Belum punya akun? Daftar di sini',
-                    style: TextStyle(
-                      color: Color.fromARGB(255, 4, 31, 184),
-                      fontSize: 16,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Belum punya akun? "),
+                    TextButton(
+                      onPressed: _updateRequired
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const RegisterScreen(),
+                                ),
+                              );
+                            },
+                      child: const Text(
+                        'Daftar di sini',
+                        style: TextStyle(
+                          color: Color.fromARGB(255, 4, 31, 184),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                TextButton(
-                  onPressed: _updateRequired
-                      ? null
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ForgotPasswordScreen(),
-                            ),
-                          );
-                        },
-                  child: const Text(
-                    'Lupa Password?',
-                    style: TextStyle(
-                      color: Color.fromARGB(255, 4, 31, 184),
-                      fontSize: 16,
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -276,11 +326,11 @@ class _LoginScreenState extends State<LoginScreen> {
       fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(color: Color.fromARGB(255, 4, 31, 184)),
+        borderSide: const BorderSide(color: Color.fromARGB(255, 4, 31, 184)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(
+        borderSide: const BorderSide(
           color: Color.fromARGB(255, 4, 31, 184),
           width: 2,
         ),

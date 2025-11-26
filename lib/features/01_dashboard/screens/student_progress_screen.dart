@@ -39,7 +39,8 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error.toString()}"));
+              // Pastikan konsisten: Dashboard menampilkan pesan dashboard
+              return const Center(child: Text('Gagal memuat dashboard.'));
             }
             if (!snapshot.hasData) {
               return const Center(child: Text("Tidak ada data progres."));

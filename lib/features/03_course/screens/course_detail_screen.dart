@@ -842,7 +842,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              return Center(child: Text('${snapshot.error}'));
             }
             if (!snapshot.hasData) {
               return const Center(child: Text('Data tidak ditemukan.'));

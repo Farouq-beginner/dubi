@@ -39,10 +39,11 @@ class AuthProvider with ChangeNotifier {
 
   // --- LOGIC METHODS ---
 
-  Future<void> _init() async {
+Future<void> _init() async {
     try {
-      final token = await _storage.read(key: 'authToken');
-      final userJson = await _storage.read(key: 'userData');
+      // Gunakan key yang konsisten ('auth_token' & 'user_data')
+      final token = await _storage.read(key: 'auth_token');
+      final userJson = await _storage.read(key: 'user_data');
 
       if (token != null && userJson != null) {
         _token = token;
@@ -60,7 +61,37 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+// --- [PERBAIKAN FUNGSI INI] ---
+  Future<bool> loadUserFromStorage() async {
+    try {
+      // 1. Baca token dan data user dari Secure Storage
+      // Pastikan key-nya KONSISTEN dengan saat login/register ('auth_token' & 'user_data')
+      final token = await _storage.read(key: 'auth_token');
+      final userStr = await _storage.read(key: 'user_data');
+
+      // 2. Jika data ada, masukkan ke state aplikasi
+      if (token != null && userStr != null) {
+        _token = token;
+        _user = User.fromJson(jsonDecode(userStr));
+        
+        // [PERBAIKAN] Hapus '_isLoggedIn = true;' karena isLoggedIn adalah getter otomatis
+        // _isLoggedIn = true; <-- HAPUS INI
+        
+        _dio.options.headers['Authorization'] = 'Bearer $_token'; // Jangan lupa set header
+
+        notifyListeners(); // Kabari UI bahwa user sudah login
+        return true;
+      }
+    } catch (e) {
+      // Jika error (misal data korup), anggap belum login
+      await logout();
+    }
+    return false;
+  }
+
+
   /// [PUBLIC] Handle Login User
+/// [PUBLIC] Handle Login User
   Future<void> login(String email, String password) async {
     try {
       final response = await _dio.post(
@@ -69,14 +100,13 @@ class AuthProvider with ChangeNotifier {
       );
 
       if (response.data['success'] == true) {
-        // --- INI JALUR SUKSES ---
-        // Kita HANYA parse 'user' jika sukses
         _user = User.fromJson(response.data['user']);
         _token = response.data['token'];
 
-        await _storage.write(key: 'authToken', value: _token);
+        // Gunakan key yang KONSISTEN: 'auth_token' dan 'user_data'
+        await _storage.write(key: 'auth_token', value: _token); 
         await _storage.write(
-          key: 'userData',
+          key: 'user_data',
           value: jsonEncode(_user!.toJson()),
         );
 
@@ -85,11 +115,7 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
       }
     } on DioException catch (e) {
-      // --- INI PERBAIKANNYA (JALUR GAGAL) ---
-      // Jika login gagal (password salah), JANGAN parse user.
-      // Cukup lemparkan (throw) pesan error-nya sebagai String.
       throw (e.response?.data['message'] ?? 'Login Gagal. Terjadi error.');
-      // ------------------------------------
     } catch (e) {
       print("Login error (non-dio): $e");
       throw ('Terjadi kesalahan tidak dikenal saat login.');
@@ -172,7 +198,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> logout() async {
+Future<void> logout() async {
     try {
       await _dio.post('/logout');
     } catch (e) {
@@ -180,7 +206,7 @@ class AuthProvider with ChangeNotifier {
     } finally {
       _user = null;
       _token = null;
-      await _storage.deleteAll();
+      await _storage.deleteAll(); // Ini akan menghapus 'auth_token' dan 'user_data'
       _dio.options.headers.remove('Authorization');
       notifyListeners();
     }

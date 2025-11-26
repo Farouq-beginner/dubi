@@ -50,6 +50,34 @@ class DataService {
 
   // ... (fungsi fetch, CRUD Teacher, dan Admin Anda) ...
 
+  // Cek apakah server bisa dihubungi
+  Future<bool> checkServerConnection() async {
+    try {
+      _dio.options.connectTimeout = const Duration(seconds: 5); // Timeout cepat
+      final response = await _dio.get('/server/status');
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Cek apakah token saat ini masih valid
+  Future<bool> checkSessionValidity() async {
+    try {
+      final response = await _dio.get('/server/session');
+      return response.data['valid'] == true;
+    } catch (e) {
+      return false; // Token invalid atau expired
+    }
+  }
+
+  // Logout device lain
+  Future<String> logoutOtherDevices() async {
+    // Implementasi khusus: Biasanya butuh login ulang untuk dapat token baru
+    // Untuk simplifikasi, kita arahkan user logout lokal dulu
+    return "Silakan login kembali untuk mereset sesi.";
+  }
+
   // ------------------------------------------------------------------
   // --- PROFILE Operations (Foto & Password) -------------------------
   // ------------------------------------------------------------------
@@ -119,20 +147,69 @@ class DataService {
     }
   }
 
+  // -------------------------------------------------------------------
+  // --- PUBLIC FORGOT PASSWORD ---------------------------
+  // -------------------------------------------------------------------
+
+  Future<String> forgotPasswordSendCode(String email) async {
+    try {
+      _dio.options.sendTimeout = const Duration(seconds: 30);
+      final response = await _dio.post(
+        '/forgot-password',
+        data: {'email': email},
+      );
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal mengirim kode');
+    }
+  }
+
+  Future<String> forgotPasswordReset({
+    required String email,
+    required String code,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/reset-password',
+        data: {
+          'email': email,
+          'code': code,
+          'password': newPassword,
+          'password_confirmation': confirmPassword,
+        },
+      );
+      return response.data['message'];
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal mereset password');
+    }
+  }
+
   // ------------------------------------------------------------------
   // --- READ Operations (Umum & Siswa) --------------------------------
   // ------------------------------------------------------------------
 
   Future<List<Level>> fetchLevels() async {
-    final response = await _dio.get('/levels');
-    List<dynamic> data = response.data['data'];
-    return data.map((json) => Level.fromJson(json)).toList();
+    try {
+      final response = await _dio.get('/levels');
+      List<dynamic> data = response.data['data'];
+      return data.map((json) => Level.fromJson(json)).toList();
+    } on DioException catch (e) {
+      // Pesan generik agar UI tidak menampilkan DioException mentah
+      throw _handleDioError(e, 'Gagal memuat data.');
+    }
   }
 
   Future<List<Subject>> fetchSubjects() async {
-    final response = await _dio.get('/subjects');
-    List<dynamic> data = response.data['data'];
-    return data.map((json) => Subject.fromJson(json)).toList();
+    try {
+      final response = await _dio.get('/subjects');
+      List<dynamic> data = response.data['data'];
+      return data.map((json) => Subject.fromJson(json)).toList();
+    } on DioException catch (e) {
+      // Pesan generik agar UI tidak menampilkan DioException mentah
+      throw _handleDioError(e, 'Gagal memuat data.');
+    }
   }
 
   Future<List<Course>> fetchMyCourses() async {
@@ -141,7 +218,7 @@ class DataService {
       List<dynamic> data = response.data['data'];
       return data.map((json) => Course.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw _handleDioError(e, 'Gagal memuat kursus');
+      throw _handleDioError(e, 'Gagal memuat course.');
     }
   }
 
@@ -491,7 +568,7 @@ class DataService {
       final response = await _dio.get('/student/dashboard');
       return StudentDashboard.fromJson(response.data['data']);
     } on DioException catch (e) {
-      throw _handleDioError(e, 'Gagal memuat dashboard siswa.');
+      throw _handleDioError(e, 'Gagal memuat dashboard.');
     }
   }
 
@@ -503,7 +580,7 @@ class DataService {
       List<dynamic> data = response.data['data'];
       return data.map((json) => Level.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw _handleDioError(e, 'Gagal memuat data kursus.');
+      throw _handleDioError(e, 'Gagal memuat beranda.');
     }
   }
 
@@ -515,7 +592,7 @@ class DataService {
       // Kita perlu parsing 'level' dan 'subject' yang di-nest
       return data.map((json) => Course.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw _handleDioError(e, 'Gagal memuat kursus level ini.');
+      throw _handleDioError(e, 'Gagal memuat course.');
     }
   }
 
@@ -526,7 +603,7 @@ class DataService {
       List<dynamic> data = response.data['data'];
       return data.map((json) => Course.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw _handleDioError(e, 'Gagal memuat kursus mata pelajaran ini.');
+      throw _handleDioError(e, 'Gagal memuat course.');
     }
   }
 
@@ -741,7 +818,7 @@ class DataService {
       final response = await _dio.get('/sempoa/progress');
       return SempoaProgress.fromJson(response.data['data']);
     } on DioException catch (e) {
-      throw _handleDioError(e, 'Gagal memuat progres Sempoa.');
+      throw _handleDioError(e, 'Gagal memuat sempoa.');
     }
   }
 
@@ -772,7 +849,9 @@ class DataService {
       List<dynamic> data = response.data['data'];
       return data.map((json) => LeaderboardItem.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw _handleDioError(e, 'Gagal memuat Leaderboard Sempoa.');
+      throw _handleDioError(e, 'Gagal memuat sempoa.');
     }
   }
+
+  Future checkAppUpdate(int currentBuild) async {}
 }

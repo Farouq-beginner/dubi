@@ -67,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              return Center(child: Text('${snapshot.error}'));
             }
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return Center(
@@ -283,14 +283,13 @@ class _HomeScreenState extends State<HomeScreen> {
 // Kapsul kecil untuk label jenjang di samping judul
 class _LevelBadge extends StatelessWidget {
   final String text;
-  final VoidCallback? onTap;
-  const _LevelBadge({required this.text, this.onTap});
+  const _LevelBadge({required this.text});
 
   @override
   Widget build(BuildContext context) {
     if (text.isEmpty) return const SizedBox.shrink();
     return InkWell(
-      onTap: onTap,
+      onTap: null,
       borderRadius: BorderRadius.circular(999),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

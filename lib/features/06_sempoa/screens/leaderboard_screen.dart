@@ -71,7 +71,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       size: 48,
                     ),
                     const SizedBox(height: 12),
-                    Text('Gagal memuat leaderboard: ${snapshot.error}'),
+                    Text('${snapshot.error}'),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
                       onPressed: _refresh,
