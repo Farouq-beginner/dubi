@@ -36,15 +36,19 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
   int _selectedIndex = 0;
   late List<Widget> _widgetOptions;
   bool _updateDialogShown = false; // prevent duplicate forced update dialogs
+  bool _sessionDialogShown = false; // prevent duplicate session dialogs
+  bool _isCheckingSession = false; // debounce concurrent checks
 
   // --- [BAGIAN BARU] Init & Dispose Observer ---
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Setelah login & masuk container, cek validitas sesi seperti di SmartSplash
-    _authenticateUserSession();
-    _checkUpdateFromProviderOrNetwork();
+    // Jalankan cek setelah frame pertama agar dialog aman di Android
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _authenticateUserSession();
+      _checkUpdateFromProviderOrNetwork();
+    });
   }
 
   @override
@@ -101,6 +105,8 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
 
   // --- Session validity check (mirror SmartSplash) ---
   Future<void> _authenticateUserSession() async {
+    if (_isCheckingSession || _sessionDialogShown) return;
+    _isCheckingSession = true;
     final dataService = DataService(context);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isLoggedIn) return;
@@ -108,39 +114,46 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
     // Tampilkan teks/indikator ringan opsional? (skip, fokus ke dialog)
     final sessionValid = await dataService.checkSessionValidity();
     if (!sessionValid) {
-      // Hapus data lokal dulu agar state bersih
-      await authProvider.logout();
-      if (!mounted) return;
+      if (!mounted || _sessionDialogShown) { _isCheckingSession = false; return; }
+      _sessionDialogShown = true;
 
-      // Tampilkan dialog sama seperti di SmartSplash
-      await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          title: const Text(
-            'Sesi Berakhir',
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-          ),
-          content: const Text(
-            'Akun Anda telah login di perangkat lain atau sesi telah habis.\n\nSilakan login kembali.',
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx); // tutup dialog
-              },
-              child: const Text('OK, Ke Halaman Login'),
+      // Tampilkan dialog setelah frame agar stabil di Android
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) { _isCheckingSession = false; return; }
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          useRootNavigator: true,
+          builder: (ctx) => AlertDialog(
+            title: const Text(
+              'Sesi Berakhir',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
             ),
-          ],
-        ),
-      );
-
-      if (!mounted) return;
-      // Arahkan ke Login setelah dialog ditutup
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
+            content: const Text(
+              'Akun Anda telah login di perangkat lain atau sesi telah habis.\n\nSilakan login kembali.',
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () async {
+                  // Tutup dialog dulu, lalu logout dan arahkan ke Login
+                  Navigator.of(ctx).pop();
+                  await authProvider.logout();
+                  if (!mounted) return;
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                },
+                child: const Text('OK, Ke Halaman Login'),
+              ),
+            ],
+          ),
+        );
+        _sessionDialogShown = false;
+        _isCheckingSession = false;
+      });
+    } else {
+      _isCheckingSession = false;
     }
   }
 

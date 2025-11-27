@@ -22,40 +22,112 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _blockingLoading = false;
 
-  // --- FUNGSI 1: Upload Foto (Support Web & Mobile) ---
-  Future<void> _pickImage(User user) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 50,
-    );
-
-    if (pickedFile != null) {
-      setState(() => _blockingLoading = true);
-
-      try {
-        // [PERBAIKAN] Gunakan bytes dan nama file, bukan File path langsung
-        final bytes = await pickedFile.readAsBytes();
-        final fileName = pickedFile.name;
-
-        await DataService(context).uploadProfilePhoto(bytes, fileName);
-
-        if (!mounted) return;
-        
-        // [PENTING] Refresh data user agar URL foto baru diambil
-        await Provider.of<AuthProvider>(context, listen: false).refreshUser();
-        
-        // (Opsional) Paksa rebuild widget agar gambar tampil baru
-        setState(() {});
-
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto berhasil diunggah!'), backgroundColor: Colors.green));
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+  // [FUNGSI 1] Menampilkan Pilihan (Sheet)
+  void _showImageSourceActionSheet(User user) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Text(
+                  'Ganti Foto Profil',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.blue),
+                title: const Text('Ambil dari Galeri'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(user, ImageSource.gallery); // <-- Sumber Galeri
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.green),
+                title: const Text('Ambil Foto Kamera'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(user, ImageSource.camera); // <-- Sumber Kamera
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         );
-      } finally {
-        if (mounted) setState(() => _blockingLoading = false);
+      },
+    );
+  }
+
+  // [FUNGSI 2] Logika Kamera/Galeri & Upload Otomatis
+  Future<void> _pickImage(User user, ImageSource source) async {
+    final picker = ImagePicker();
+
+    try {
+      // 1. Buka Kamera/Galeri Langsung
+      // (Di HP Asli: Ini membuka kamera full screen)
+      // (Di Windows: Ini membuka File Explorer)
+      final pickedFile = await picker.pickImage(
+        source: source,
+        imageQuality: 50, // Kompres agar upload cepat
+        maxWidth: 800, // Resize agar tidak terlalu berat
+      );
+
+      // 2. Jika user selesai memotret/memilih (tidak menekan back)
+      if (pickedFile != null) {
+        // Tampilkan loading blocker agar user menunggu upload selesai
+        setState(() => _blockingLoading = true);
+
+        try {
+          // 3. Baca file sebagai Bytes (Support Web/Mobile/Desktop)
+          final bytes = await pickedFile.readAsBytes();
+          final fileName = pickedFile.name;
+
+          // 4. Upload Otomatis ke Backend
+          await DataService(context).uploadProfilePhoto(bytes, fileName);
+
+          if (!mounted) return;
+
+          // 5. Refresh Data User (Agar URL foto baru terambil)
+          await Provider.of<AuthProvider>(context, listen: false).refreshUser();
+
+          // 6. Paksa layar update
+          setState(() {});
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Foto berhasil diunggah!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          );
+        } finally {
+          // 7. Hilangkan Loading
+          if (mounted) setState(() => _blockingLoading = false);
+        }
+      }
+    } catch (e) {
+      print("Error picking image: $e");
+      // Error ini biasanya terjadi jika user menolak izin kamera
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Gagal membuka kamera/galeri. Pastikan izin diberikan.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
     }
   }
@@ -255,9 +327,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             backgroundImage:
                                 (user.profilePhotoPath != null &&
                                     user.profilePhotoPath!.isNotEmpty)
+                                // Ganti URL ke endpoint proxy kita
+                                // Gunakan 127.0.0.1 atau IP LAN Anda (192.168.x.x) sesuai kebutuhan
                                 ? NetworkImage(
-                                    'http://192.168.1.3:8000/storage/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}',
-                                  ) // Gunakan 10.0.2.2 untuk emulator
+                                    'http://192.168.1.3:8000/api/image-proxy/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}',
+                                  )
                                 : null,
                             child:
                                 (user.profilePhotoPath == null ||
@@ -279,26 +353,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             right: 4,
                             bottom: 4,
                             child: GestureDetector(
-                              onTap: () => _pickImage(
+                              onTap: () => _showImageSourceActionSheet(
                                 user,
-                              ), // Aksi upload pindah ke sini
+                              ), // <-- [PERUBAHAN] Panggil BottomSheet
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color.fromARGB(
-                                    255,
-                                    4,
-                                    31,
-                                    184,
-                                  ), // Warna biru tema app
+                                  color: const Color.fromARGB(255, 4, 31, 184),
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: Colors.white,
                                     width: 3,
-                                  ), // Border putih agar kontras
+                                  ),
                                 ),
                                 child: const Icon(
-                                  Icons.camera_alt, // Icon kamera
+                                  Icons.camera_alt,
                                   color: Colors.white,
                                   size: 20,
                                 ),
