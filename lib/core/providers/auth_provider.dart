@@ -15,7 +15,7 @@ class AuthProvider with ChangeNotifier {
       // Gunakan http://127.0.0.1:8000 jika menjalankan di Chrome (Web)
       // Pastikan server 'php artisan serve' Anda tetap berjalan!
       // Ganti '10.0.2.2' dengan '127.0.0.1' jika menjalankan di web (Chrome)
-      baseUrl: 'http://192.168.1.8:8000/api/',
+      baseUrl: 'http://192.168.1.3:8000/api/',
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ),
@@ -139,44 +139,41 @@ Future<bool> checkSessionValidity() async {
 
 
   /// [PUBLIC] Refresh data user dari server agar halaman Profile bisa pull-to-refresh
-  Future<void> refreshUser() async {
+Future<void> refreshUser() async {
     try {
-      // Coba endpoint umum '/me' lebih dulu
-      final res = await _dio.get('/me');
-      final data = res.data;
-      User parsed;
-      if (data is Map && data['user'] != null) {
-        parsed = User.fromJson(data['user']);
-      } else {
-        parsed = User.fromJson(data);
-      }
-      _user = parsed;
-      await _storage.write(key: 'userData', value: jsonEncode(_user!.toJson()));
-      notifyListeners();
-      return;
-    } on DioException catch (_) {
-      // Jika '/me' tidak ada, coba '/user'
-      try {
-        final res2 = await _dio.get('/user');
-        final data2 = res2.data;
-        User parsed2;
-        if (data2 is Map && data2['user'] != null) {
-          parsed2 = User.fromJson(data2['user']);
+      // Panggil endpoint standar '/user'
+      final response = await _dio.get('/user');
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        // Logika parsing yang lebih aman
+        // Backend Laravel biasanya mengembalikan objek user langsung,
+        // tapi kadang dibungkus dalam 'data' atau 'user' tergantung konfigurasi resource.
+        Map<String, dynamic> userMap;
+        
+        if (data['user'] != null) {
+          userMap = data['user'];
+        } else if (data['data'] != null) {
+          userMap = data['data'];
         } else {
-          parsed2 = User.fromJson(data2);
+          userMap = data;
         }
-        _user = parsed2;
+
+        // Update state user
+        _user = User.fromJson(userMap);
+
+        // [PENTING] Simpan dengan key 'user_data' (harus sama dengan saat login/load)
         await _storage.write(
-          key: 'userData',
-          value: jsonEncode(_user!.toJson()),
+          key: 'user_data', 
+          value: jsonEncode(_user!.toJson())
         );
+        
         notifyListeners();
-      } catch (e) {
-        // Diamkan (backend mungkin tidak menyediakan endpoint ini)
-        print('refreshUser fallback error: $e');
       }
     } catch (e) {
-      print('refreshUser error: $e');
+      print("Gagal refresh user: $e");
+      // Opsional: Jangan logout user jika hanya gagal refresh (misal karena koneksi)
     }
   }
 

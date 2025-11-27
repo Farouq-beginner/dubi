@@ -1,13 +1,16 @@
 // lib/features/02_profile/screens/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/user_model.dart';
-import '../../../core/services/data_service.dart'; // <--- Import untuk Edit Profil
-import '../../../core/models/level_model.dart'; // <--- Import untuk Edit Profil
-import 'change_password_screen.dart'; // <-- Import layar Ubah Password
-import 'about_app_screen.dart'; // <--- Import untuk AboutAppScreen
-import '../../00_auth/screens/login_screen.dart'; // <-- Import layar Login
+import '../../../core/services/data_service.dart';
+import '../../../core/models/level_model.dart';
+import '../../00_auth/screens/login_screen.dart';
+import 'change_password_screen.dart';
+import 'about_app_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -17,15 +20,51 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _blockingLoading = false; // Tambahkan variabel ini
+  bool _blockingLoading = false;
 
-  // --- Fungsi Edit Profil (Nama & Email) ---
+  // --- FUNGSI 1: Upload Foto (Support Web & Mobile) ---
+  Future<void> _pickImage(User user) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+    );
+
+    if (pickedFile != null) {
+      setState(() => _blockingLoading = true);
+
+      try {
+        // [PERBAIKAN] Gunakan bytes dan nama file, bukan File path langsung
+        final bytes = await pickedFile.readAsBytes();
+        final fileName = pickedFile.name;
+
+        await DataService(context).uploadProfilePhoto(bytes, fileName);
+
+        if (!mounted) return;
+        
+        // [PENTING] Refresh data user agar URL foto baru diambil
+        await Provider.of<AuthProvider>(context, listen: false).refreshUser();
+        
+        // (Opsional) Paksa rebuild widget agar gambar tampil baru
+        setState(() {});
+
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto berhasil diunggah!'), backgroundColor: Colors.green));
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      } finally {
+        if (mounted) setState(() => _blockingLoading = false);
+      }
+    }
+  }
+
+  // --- FUNGSI 2: Edit Profil (Nama & Email) ---
   void _showEditProfileDialog(User user, List<Level> allLevels) {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: user.fullName);
     final emailController = TextEditingController(text: user.email);
-    // Kita tidak izinkan edit role di sini, hanya nama & email
-    // Jika siswa, kita izinkan ganti jenjang
     int? selectedLevelId = user.levelId;
 
     showDialog(
@@ -34,7 +73,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return AlertDialog(
           title: const Text('Edit Profil'),
           content: StatefulBuilder(
-            // Agar dropdown level bisa update
             builder: (context, setDialogState) {
               return SingleChildScrollView(
                 child: Form(
@@ -58,7 +96,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ? 'Email tidak valid'
                             : null,
                       ),
-                      // Hanya tampilkan pilihan jenjang jika dia siswa
                       if (user.role == 'student') ...[
                         const SizedBox(height: 16),
                         DropdownButtonFormField<int>(
@@ -95,39 +132,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (!formKey.currentState!.validate()) return;
 
                 try {
-                  // Panggil API Update (kita bisa gunakan API Admin atau buat API khusus user)
-                  // Untuk saat ini, kita gunakan API Admin (jika user adalah admin)
-                  // atau kita perlu buat API baru di AuthController untuk 'updateProfile'
-
-                  // NOTE: Kita belum buat API untuk 'update profile'
-                  // Kita akan panggil 'adminUpdateUser' jika user-nya admin
-                  // Ini harus diganti dengan API /profile/update yang lebih aman nanti
                   final auth = Provider.of<AuthProvider>(
                     context,
                     listen: false,
                   );
+
                   if (auth.user?.role == 'admin') {
                     await DataService(context).adminUpdateUser(
                       userId: user.userId,
                       fullName: nameController.text,
                       email: emailController.text,
-                      role: user.role, // Role tidak diubah
+                      role: user.role,
                       levelId: selectedLevelId,
                     );
                   } else {
-                    // TODO: Panggil API baru /profile/update
                     throw Exception(
-                      'Fitur update profil (non-admin) belum terhubung ke API.',
+                      'Hubungi Admin untuk mengubah data profil utama.',
                     );
                   }
 
                   if (!mounted) return;
-                  // Refresh data user di AuthProvider
                   await auth.refreshUser();
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Profil berhasil diperbarui!'),
+                      content: Text('Profil diperbarui!'),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -149,16 +178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _refresh() async {
-    setState(() => _blockingLoading = true);
-    try {
-      await Provider.of<AuthProvider>(context, listen: false).refreshUser();
-    } finally {
-      if (mounted) setState(() => _blockingLoading = false);
-    }
-  }
-
-  // --- Fungsi Logout ---
+  // --- FUNGSI 3: Logout ---
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -172,12 +192,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              Navigator.of(ctx).pop(); // Tutup dialog
-              Provider.of<AuthProvider>(context, listen: false).logout();
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await Provider.of<AuthProvider>(context, listen: false).logout();
+
+              if (!mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()), 
-                  (route) => false);
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
             },
             child: const Text(
               'Ya, Logout!',
@@ -191,132 +214,208 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Ambil data user dari AuthProvider
     final auth = Provider.of<AuthProvider>(context);
     final User? user = auth.user;
 
-    // Gunakan FutureBuilder untuk mengambil data Levels (dibutuhkan untuk form Edit)
     return FutureBuilder<List<Level>>(
-      future: DataService(context).fetchLevels(), // Ambil data jenjang
+      future: DataService(context).fetchLevels(),
       builder: (context, snapshot) {
         if (!snapshot.hasData &&
             snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final allLevels =
-            snapshot.data ?? []; // Daftar jenjang (meskipun kosong jika error)
+        final allLevels = snapshot.data ?? [];
 
         if (user == null) {
           return const Center(child: Text('Gagal memuat data pengguna.'));
         }
 
-        return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+        return Stack(
           children: [
-            // --- 1. Header Profil ---
-            Center(
-              child: Column(
-                children: [SizedBox(height: 16),
-                  Text(
-                    user.fullName,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    user.email,
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 16),
-                  Chip(
-                    label: Text(
-                      user.role.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+            ListView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 24.0,
+              ),
+              children: [
+                // --- Header Foto Profil (Stack) ---
+                Center(
+                  child: Column(
+                    children: [
+                      // Gunakan Stack untuk menumpuk icon di atas foto
+                      Stack(
+                        alignment:
+                            Alignment.bottomRight, // Posisi icon di kanan bawah
+                        children: [
+                          // 1. Foto Profil (Tidak bisa diklik langsung)
+                          CircleAvatar(
+                            radius: 60, // Perbesar sedikit
+                            backgroundColor: Colors.green.shade100,
+                            backgroundImage:
+                                (user.profilePhotoPath != null &&
+                                    user.profilePhotoPath!.isNotEmpty)
+                                ? NetworkImage(
+                                    'http://192.168.1.3:8000/storage/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}',
+                                  ) // Gunakan 10.0.2.2 untuk emulator
+                                : null,
+                            child:
+                                (user.profilePhotoPath == null ||
+                                    user.profilePhotoPath!.isEmpty)
+                                ? Text(
+                                    user.fullName.isNotEmpty
+                                        ? user.fullName[0].toUpperCase()
+                                        : '?',
+                                    style: TextStyle(
+                                      fontSize: 48,
+                                      color: Colors.green[800],
+                                    ),
+                                  )
+                                : null,
+                          ),
+
+                          // 2. Icon Edit (Kamera)
+                          Positioned(
+                            right: 4,
+                            bottom: 4,
+                            child: GestureDetector(
+                              onTap: () => _pickImage(
+                                user,
+                              ), // Aksi upload pindah ke sini
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(
+                                    255,
+                                    4,
+                                    31,
+                                    184,
+                                  ), // Warna biru tema app
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 3,
+                                  ), // Border putih agar kontras
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt, // Icon kamera
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+
+                      const SizedBox(height: 16),
+                      Text(
+                        user.fullName,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        user.email,
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 16),
+                      Chip(
+                        label: Text(
+                          user.role.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        backgroundColor: Colors.green[700],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+                const Divider(),
+                const SizedBox(height: 16),
+
+                // --- Akun ---
+                _buildSectionTitle('Akun'),
+                _buildProfileTile(
+                  title: 'Edit Profil',
+                  icon: Icons.person_outline,
+                  onTap: () => _showEditProfileDialog(user, allLevels),
+                ),
+                _buildProfileTile(
+                  title: 'Ganti Password',
+                  icon: Icons.lock_outline,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ChangePasswordScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                // --- Aplikasi ---
+                _buildSectionTitle('Aplikasi'),
+                _buildProfileTile(
+                  title: 'Notifikasi',
+                  icon: Icons.notifications_none_outlined,
+                  onTap: () {},
+                ),
+                _buildProfileTile(
+                  title: 'Tentang Aplikasi',
+                  icon: Icons.info_outline,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AboutAppScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 40),
+
+                // --- Logout ---
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text(
+                    'LOGOUT',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[600],
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: Colors.green[700],
                   ),
-                ],
-              ),
+                  onPressed: _showLogoutDialog,
+                ),
+              ],
             ),
 
-            const SizedBox(height: 32),
-            const Divider(),
-            const SizedBox(height: 16),
-
-            // --- 2. Grup Pengaturan Akun ---
-            _buildSectionTitle('Akun'),
-            _buildProfileTile(
-              title: 'Edit Profil',
-              icon: Icons.person_outline,
-              onTap: () {
-                _showEditProfileDialog(user, allLevels);
-              },
-            ),
-            _buildProfileTile(
-              title: 'Ganti Password',
-              icon: Icons.lock_outline,
-              onTap: () {
-                // Navigasi ke layar Ubah Password
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
-                );
-              },
-            ),
-
-            const SizedBox(height: 24),
-
-            // --- 3. Grup Pengaturan Aplikasi ---
-            _buildSectionTitle('Aplikasi'),
-            _buildProfileTile(
-              title: 'Notifikasi',
-              icon: Icons.notifications_none_outlined,
-              onTap: () {},
-            ),
-            _buildProfileTile(
-              title: 'Tentang Aplikasi',
-              icon: Icons.info_outline,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AboutAppScreen(),
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 40),
-
-            // --- 4. Tombol Logout ---
-            ElevatedButton.icon(
-              icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text(
-                'LOGOUT',
-                style: TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[600],
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            if (_blockingLoading)
+              const Positioned.fill(
+                child: ColoredBox(
+                  color: Colors.black26,
+                  child: Center(child: CircularProgressIndicator()),
                 ),
               ),
-              onPressed: _showLogoutDialog,
-            ),
           ],
         );
       },
     );
   }
 
-  // Helper untuk Judul Grup
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
@@ -331,7 +430,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Helper untuk Tombol/Tile Pengaturan
   Widget _buildProfileTile({
     required String title,
     required IconData icon,

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
+import 'dart:io';
 
 // Import semua model dari core
 import '../models/user_model.dart';
@@ -81,6 +82,33 @@ class DataService {
   // ------------------------------------------------------------------
   // --- PROFILE Operations (Foto & Password) -------------------------
   // ------------------------------------------------------------------
+
+// [PERBAIKAN] 1. Upload Foto Profil
+Future<String> uploadProfilePhoto(List<int> bytes, String filename) async {
+    try {
+      FormData formData = FormData.fromMap({
+        "photo": MultipartFile.fromBytes(bytes, filename: filename),
+      });
+
+      final response = await _dio.post(
+        '/profile/update-photo', 
+        data: formData,
+      );
+
+      // Pastikan response data valid sebelum akses
+      if (response.data != null && response.data['data'] != null) {
+         return response.data['data']['url'].toString();
+      }
+      throw 'Format respon server tidak valid.';
+
+    } on DioException catch (e) {
+      print("Upload Error: ${e.response?.data}");
+      throw _handleDioError(e, 'Gagal mengunggah foto profil.');
+    } catch (e) {
+       print("File Error: $e");
+       throw "Gagal memproses file gambar.";
+    }
+  }
 
   // 1. Request Kode Verifikasi ke Email
   Future<String> sendPasswordCode() async {
