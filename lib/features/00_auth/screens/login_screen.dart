@@ -1,11 +1,9 @@
 // lib/features/00_auth/screens/login_screen.dart
-import 'dart:convert';
-import 'dart:io'; // Untuk deteksi Platform
-import 'package:flutter/foundation.dart'; // Untuk kIsWeb
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/providers/auth_provider.dart';
@@ -30,61 +28,55 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Jalankan cek update setelah frame pertama
+    // Ambil status update dari AuthProvider (diset oleh AuthCheckScreen)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAppUpdate();
+      _checkUpdateFromProviderOrNetwork();
     });
   }
 
   // 🔍 Cek versi (Logika Lokal)
-  Future<void> _checkAppUpdate() async {
+  // Update check now controlled by AuthCheckScreen via AuthProvider
+  Future<void> _checkUpdateFromProviderOrNetwork() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    // If AuthCheckScreen already set flag, honor it
+    if (auth.updateRequired) {
+      _updateRequired = true;
+      final info = auth.updateInfo ?? {};
+      final url = (info['download_url'] ?? '').toString();
+      final changelog = (info['changelog'] ?? 'Pembaruan tersedia.').toString();
+      _showForceUpdateDialog(url, changelog);
+      return;
+    }
+
+    // Otherwise, perform a quick network check to ensure dialog appears
     try {
-      print('🔍 Memeriksa update...');
       final packageInfo = await PackageInfo.fromPlatform();
-      int currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
-
-      // Tentukan URL berdasarkan Platform (Android Emulator butuh 10.0.2.2)
-      String baseUrl = 'http://127.0.0.1:8000';
-      if (!kIsWeb && Platform.isAndroid) {
-        baseUrl = 'http://10.0.2.2:8000';
-      }
-
-      final response = await http.get(Uri.parse(
-        '$baseUrl/api/check-update?build_number=$currentBuild',
-      )).timeout(const Duration(seconds: 5)); // Tambah timeout agar tidak hang
-
-      print('📥 Status: ${response.statusCode}');
-      
+      final currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
+      final base = auth.dio.options.baseUrl;
+      final root = base.endsWith('/api/') ? base.substring(0, base.length - 5) : base;
+      final uri = Uri.parse('$root/api/check-update?build_number=$currentBuild');
+      final response = await http.get(uri).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        
-        // [PERBAIKAN] Pastikan data adalah Map dan tidak null
-        if (data != null && data is Map<String, dynamic>) {
-          print('📦 Body: $data');
-
-          // Ambil data dengan aman (menggunakan ?.)
-          int latestBuild = int.tryParse(data['latest_build']?.toString() ?? '0') ?? 0;
-          bool forceUpdate = data['update_required'] ?? false;
-          String downloadUrl = data['download_url'] ?? '';
-          String changelog = data['changelog'] ?? 'Pembaruan tersedia.';
-
-          print('📱 Current: $currentBuild | 🔄 Latest: $latestBuild');
-
-          // Logika membandingkan versi
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          final latestBuild = int.tryParse(decoded['latest_build']?.toString() ?? '0') ?? 0;
+          final forceUpdate = decoded['update_required'] == true;
+          final downloadUrl = decoded['download_url']?.toString() ?? '';
+          final changelog = decoded['changelog']?.toString() ?? 'Pembaruan tersedia.';
           if (forceUpdate && latestBuild > currentBuild) {
+            _updateRequired = true;
+            auth.setUpdateRequirement(required: true, info: {
+              'latest_build': latestBuild,
+              'download_url': downloadUrl,
+              'changelog': changelog,
+            });
             if (!mounted) return;
-            setState(() => _updateRequired = true);
             _showForceUpdateDialog(downloadUrl, changelog);
-          } else {
-            print('✅ Aplikasi sudah versi terbaru.');
           }
         }
-      } else {
-        print('⚠️ Gagal cek update: Server error ${response.statusCode}');
       }
     } catch (e) {
-      // Error jaringan (misal offline) diabaikan agar user tetap bisa login
-      print('❌ Error cek update (Diabaikan): $e');
+      // ignore errors; login remains available
     }
   }
 

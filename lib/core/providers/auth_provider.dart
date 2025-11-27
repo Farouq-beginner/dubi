@@ -1,13 +1,13 @@
-// providers/auth_provider.dart
+// lib/core/providers/auth_provider.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
-import '../models/user_model.dart'; // Sesuaikan path jika perlu
+import '../models/user_model.dart';
 
 class AuthProvider with ChangeNotifier {
   // --- STATE & TOOLS ---
-  final FlutterSecureStorage _storage = FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final Dio _dio = Dio(
     BaseOptions(
       // PENTING:
@@ -15,33 +15,79 @@ class AuthProvider with ChangeNotifier {
       // Gunakan http://127.0.0.1:8000 jika menjalankan di Chrome (Web)
       // Pastikan server 'php artisan serve' Anda tetap berjalan!
       // Ganti '10.0.2.2' dengan '127.0.0.1' jika menjalankan di web (Chrome)
-      baseUrl: 'http://127.0.0.1:8000/api/',
-      connectTimeout: Duration(seconds: 5),
-      receiveTimeout: Duration(seconds: 3),
+      baseUrl: 'http://192.168.1.8:8000/api/',
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
     ),
   );
 
   User? _user;
   String? _token;
   bool _isLoading = true;
+  // Update info controlled by AuthCheckScreen
+  bool _updateRequired = false;
+  Map<String, dynamic>? _updateInfo; // contains latest_build, download_url, changelog
 
-  // --- GETTERS (Untuk dibaca UI) ---
+  // --- GETTERS ---
   User? get user => _user;
   String? get token => _token;
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _token != null && _user != null;
-  Dio get dio => _dio; // Getter untuk service lain
+  Dio get dio => _dio;
+  bool get updateRequired => _updateRequired;
+  Map<String, dynamic>? get updateInfo => _updateInfo;
 
   // --- CONSTRUCTOR ---
   AuthProvider() {
+    print("AuthProvider: Inisialisasi...");
     _init();
   }
 
-  // --- LOGIC METHODS ---
+  // Called by AuthCheckScreen to override update requirement state
+  void setUpdateRequirement({required bool required, Map<String, dynamic>? info}) {
+    _updateRequired = required;
+    _updateInfo = info;
+    notifyListeners();
+  }
 
-Future<void> _init() async {
+  Future<void> checkSession() async {
+    if (_token == null) return;
+
     try {
-      // Gunakan key yang konsisten ('auth_token' & 'user_data')
+      // Panggil endpoint ringan (misal: /user atau /server/session)
+      // Jika endpoint ini mengembalikan 401, Interceptor akan otomatis menangkapnya
+      await _dio.get('/user'); 
+    } catch (e) {
+      // Error akan ditangani oleh Interceptor atau diabaikan jika bukan 401
+    }
+  }
+
+Future<bool> checkSessionValidity() async {
+    try {
+      // Panggil endpoint user
+      final response = await _dio.get('/user');
+      // Jika sukses (200), berarti valid
+      return response.statusCode == 200;
+    } catch (e) {
+      // Jika error (401, 500, atau timeout), anggap tidak valid
+      return false;
+    }
+  }
+
+  
+
+  // Helper Hapus Data Lokal
+  Future<void> _clearLocalData() async {
+    print("🧹 Membersihkan data lokal...");
+    _user = null;
+    _token = null;
+    await _storage.deleteAll();
+    _dio.options.headers.remove('Authorization');
+    notifyListeners();
+  }
+
+  Future<void> _init() async {
+    try {
       final token = await _storage.read(key: 'auth_token');
       final userJson = await _storage.read(key: 'user_data');
 
@@ -49,6 +95,7 @@ Future<void> _init() async {
         _token = token;
         _user = User.fromJson(jsonDecode(userJson));
         _dio.options.headers['Authorization'] = 'Bearer $_token';
+        print("AuthProvider: User loaded from storage. Token: $_token");
       }
     } catch (e) {
       print("Error saat _init auth: $e");
@@ -61,37 +108,7 @@ Future<void> _init() async {
     }
   }
 
-// --- [PERBAIKAN FUNGSI INI] ---
-  Future<bool> loadUserFromStorage() async {
-    try {
-      // 1. Baca token dan data user dari Secure Storage
-      // Pastikan key-nya KONSISTEN dengan saat login/register ('auth_token' & 'user_data')
-      final token = await _storage.read(key: 'auth_token');
-      final userStr = await _storage.read(key: 'user_data');
-
-      // 2. Jika data ada, masukkan ke state aplikasi
-      if (token != null && userStr != null) {
-        _token = token;
-        _user = User.fromJson(jsonDecode(userStr));
-        
-        // [PERBAIKAN] Hapus '_isLoggedIn = true;' karena isLoggedIn adalah getter otomatis
-        // _isLoggedIn = true; <-- HAPUS INI
-        
-        _dio.options.headers['Authorization'] = 'Bearer $_token'; // Jangan lupa set header
-
-        notifyListeners(); // Kabari UI bahwa user sudah login
-        return true;
-      }
-    } catch (e) {
-      // Jika error (misal data korup), anggap belum login
-      await logout();
-    }
-    return false;
-  }
-
-
-  /// [PUBLIC] Handle Login User
-/// [PUBLIC] Handle Login User
+  // [PUBLIC] Handle Login User
   Future<void> login(String email, String password) async {
     try {
       final response = await _dio.post(
@@ -103,15 +120,13 @@ Future<void> _init() async {
         _user = User.fromJson(response.data['user']);
         _token = response.data['token'];
 
-        // Gunakan key yang KONSISTEN: 'auth_token' dan 'user_data'
-        await _storage.write(key: 'auth_token', value: _token); 
+        await _storage.write(key: 'auth_token', value: _token);
         await _storage.write(
           key: 'user_data',
           value: jsonEncode(_user!.toJson()),
         );
 
         _dio.options.headers['Authorization'] = 'Bearer $_token';
-
         notifyListeners();
       }
     } on DioException catch (e) {
@@ -121,6 +136,7 @@ Future<void> _init() async {
       throw ('Terjadi kesalahan tidak dikenal saat login.');
     }
   }
+
 
   /// [PUBLIC] Refresh data user dari server agar halaman Profile bisa pull-to-refresh
   Future<void> refreshUser() async {
@@ -198,18 +214,21 @@ Future<void> _init() async {
     }
   }
 
+// Update fungsi logout agar menggunakan helper
 Future<void> logout() async {
     try {
       await _dio.post('/logout');
     } catch (e) {
-      print("Error logging out from API (tidak masalah): $e");
+      print("Error logging out: $e");
     } finally {
-      _user = null;
-      _token = null;
-      await _storage.deleteAll(); // Ini akan menghapus 'auth_token' dan 'user_data'
-      _dio.options.headers.remove('Authorization');
-      notifyListeners();
+      await _clearLocalData();
     }
+  }
+  
+   Future<bool> loadUserFromStorage() async {
+    // Logic sama dengan _init tapi publik
+     await _init();
+     return _token != null;
   }
 
   /// [PUBLIC] Handle Forgot Password

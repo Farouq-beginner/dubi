@@ -1,14 +1,16 @@
-// main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'core/providers/auth_provider.dart'; // Sesuaikan path
-import 'features/00_auth/screens/splash_screen.dart'; // Import SplashScreen
-import 'features/00_auth/screens/smart_splash_screen.dart'; // Import SmartSplashScreen
+import 'core/providers/auth_provider.dart';
+import 'features/00_auth/screens/smart_splash_screen.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => AuthProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -21,9 +23,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'DuBI App',
-      theme: ThemeData(primarySwatch: Colors.green, fontFamily: 'Arial'),
       debugShowCheckedModeBanner: false,
-      home: SmartSplashScreen(), // Gunakan SmartSplashScreen sebagai layar awal
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
+      ),
+
+      navigatorKey: navigatorKey,
+      home: const SmartSplashScreen(),
     );
   }
 }

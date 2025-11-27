@@ -31,21 +31,33 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
-      final uri = Uri.parse('http://127.0.0.1:8000/api/check-update?build_number=$currentBuild');
+      // Build base URL from AuthProvider's Dio to keep hosts consistent
+      final base = Provider.of<AuthProvider>(context, listen: false).dio.options.baseUrl;
+      final root = base.endsWith('/api/') ? base.substring(0, base.length - 5) : base;
+      final uri = Uri.parse('$root/api/check-update?build_number=$currentBuild');
       final resp = await http.get(uri);
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body);
         final latestBuild = int.tryParse(data['latest_build'].toString()) ?? currentBuild;
         final forceUpdate = data['update_required'] == true;
         if (forceUpdate && latestBuild > currentBuild) {
-          // Jika user sedang login, lakukan logout otomatis
+          // Override update state globally so other screens respect it
           final auth = Provider.of<AuthProvider>(context, listen: false);
+          auth.setUpdateRequirement(required: true, info: {
+            'latest_build': latestBuild,
+            'download_url': data['download_url'],
+            'changelog': data['changelog'] ?? 'Pembaruan tersedia.'
+          });
+          // Jika user sedang login, lakukan logout otomatis agar kembali ke Login
           if (auth.isLoggedIn) {
             await auth.logout();
             if (!mounted) return;
-            // Setelah logout, biarkan LoginScreen yang menampilkan dialog update paksa
             setState(() {});
           }
+        } else {
+          // Clear update state if not required
+          final auth = Provider.of<AuthProvider>(context, listen: false);
+          auth.setUpdateRequirement(required: false, info: null);
         }
       }
     } catch (e) {

@@ -13,14 +13,15 @@ class SmartSplashScreen extends StatefulWidget {
   State<SmartSplashScreen> createState() => _SmartSplashScreenState();
 }
 
-class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProviderStateMixin {
+class _SmartSplashScreenState extends State<SmartSplashScreen>
+    with TickerProviderStateMixin {
   // Status Teks
   String _loadingText = "Memuat Konfigurasi...";
-  
+
   // State
   bool _isServerDown = false;
   bool _isMultiLogin = false; // (Opsional: jika backend support flag ini)
-  
+
   // Animation Controllers
   late AnimationController _rotateController;
   late AnimationController _pulseController;
@@ -28,7 +29,7 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
   @override
   void initState() {
     super.initState();
-    
+
     // Animasi Putar (Lingkaran putus-putus)
     _rotateController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -83,19 +84,48 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
       bool sessionValid = await dataService.checkSessionValidity();
 
       if (sessionValid) {
-         _navigateToHome();
+        _navigateToHome();
       } else {
-        // Token expired atau login di tempat lain (sederhana)
-        // Kita bisa anggap ini sesi habis
-        await authProvider.logout(); 
+        // --- [PERBAIKAN DI SINI] ---
+        // Jika sesi tidak valid (misal: login di device lain),
+        // JANGAN langsung navigate. Tampilkan dialog dulu.
+
+        await authProvider.logout(); // Hapus data lokal
+
+        if (!mounted) return;
+
+        // Tampilkan Dialog dan TUNGGU user menekan OK
+        await showDialog(
+          context: context,
+          barrierDismissible: false, // User WAJIB tekan tombol
+          builder: (ctx) => AlertDialog(
+            title: const Text(
+              'Sesi Berakhir',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+            content: const Text(
+              'Akun Anda telah login di perangkat lain atau sesi telah habis.\n\nSilakan login kembali.',
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx); // Tutup Dialog
+                },
+                child: const Text('OK, Ke Halaman Login'),
+              ),
+            ],
+          ),
+        );
+
+        // Setelah dialog ditutup, BARU pindah ke Login
         _navigateToLogin();
       }
     } else {
-      // Belum login
+      // Belum login sama sekali
       _navigateToLogin();
     }
   }
-  
+
   void _navigateToHome() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const MainContainerScreen()),
@@ -103,9 +133,9 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
   }
 
   void _navigateToLogin() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
   void _retryConnection() {
@@ -115,12 +145,13 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
     });
   }
 
-
   // --- BUILD UI ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Warna background gelap modern (seperti gambar)
+      backgroundColor: const Color(
+        0xFF0F172A,
+      ), // Warna background gelap modern (seperti gambar)
       body: Stack(
         children: [
           // Background gradient tipis (opsional)
@@ -148,16 +179,20 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Logo
-        Image.asset('assets/logo.png', width: 300, height: 300), 
+        Image.asset('assets/logo.png', width: 300, height: 300),
         const SizedBox(height: 150),
-        
+
         // Loading Animation & Text
         Column(
           children: [
             // Teks Status Berubah-ubah
             Text(
               _loadingText,
-              style: const TextStyle(color: Colors.white70, fontSize: 16, letterSpacing: 1.2),
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+                letterSpacing: 1.2,
+              ),
             ),
             const SizedBox(height: 20),
             // Indikator Loading (Garis lurus atau lingkaran kecil)
@@ -170,7 +205,7 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
               ),
             ),
           ],
-        )
+        ),
       ],
     );
   }
@@ -197,7 +232,8 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
                     border: Border.all(
                       color: Colors.blueAccent.withOpacity(0.5),
                       width: 3,
-                      style: BorderStyle.solid, // Flutter border dash susah native, pakai solid transparansi atau CustomPainter
+                      style: BorderStyle
+                          .solid, // Flutter border dash susah native, pakai solid transparansi atau CustomPainter
                     ),
                     gradient: const SweepGradient(
                       colors: [Colors.transparent, Colors.blueAccent],
@@ -209,7 +245,7 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
               Image.asset('assets/logo.png', width: 80, height: 80),
             ],
           ),
-          
+
           const SizedBox(height: 40),
 
           // Kotak Pesan
@@ -224,7 +260,11 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
               children: [
                 const Text(
                   "Pemeliharaan dadakan",
-                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
@@ -234,7 +274,7 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Titik Tiga Animasi (Sistem sedang diperbarui)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -245,7 +285,10 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
                     const SizedBox(width: 8),
                     _buildDot(1.0),
                     const SizedBox(width: 12),
-                    const Text("Sistem sedang diperbarui", style: TextStyle(color: Colors.blueAccent)),
+                    const Text(
+                      "Sistem sedang diperbarui",
+                      style: TextStyle(color: Colors.blueAccent),
+                    ),
                   ],
                 ),
               ],
@@ -256,17 +299,19 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
 
           // Tombol Aksi
           _buildActionButton(
-            label: "Buka Komunitas", 
-            icon: Icons.people, 
-            color: Colors.blueAccent, 
-            onTap: () { /* Link ke Discord/WA */ }
+            label: "Buka Komunitas",
+            icon: Icons.people,
+            color: Colors.blueAccent,
+            onTap: () {
+              /* Link ke Discord/WA */
+            },
           ),
           const SizedBox(height: 16),
           _buildActionButton(
-            label: "Restart Aplikasi", 
-            icon: Icons.refresh, 
-            color: Colors.white10, 
-            onTap: _retryConnection
+            label: "Restart Aplikasi",
+            icon: Icons.refresh,
+            color: Colors.white10,
+            onTap: _retryConnection,
           ),
         ],
       ),
@@ -277,24 +322,41 @@ class _SmartSplashScreenState extends State<SmartSplashScreen> with TickerProvid
     return FadeTransition(
       opacity: _pulseController,
       child: Container(
-        width: 8, 
-        height: 8, 
-        decoration: const BoxDecoration(color: Colors.blueAccent, shape: BoxShape.circle),
+        width: 8,
+        height: 8,
+        decoration: const BoxDecoration(
+          color: Colors.blueAccent,
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }
 
-  Widget _buildActionButton({required String label, required IconData icon, required Color color, required VoidCallback onTap}) {
+  Widget _buildActionButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return SizedBox(
       width: double.infinity,
       height: 55,
       child: ElevatedButton.icon(
         onPressed: onTap,
         icon: Icon(icon, color: Colors.white),
-        label: Text(label, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+        label: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 0,
         ),
       ),
