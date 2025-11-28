@@ -1,8 +1,12 @@
 // lib/features/02_profile/screens/profile_screen.dart
+import 'package:dubi/features/02_profile/screens/full_image_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
+import 'package:camera/camera.dart';
+import 'package:image_picker_web/image_picker_web.dart';
 
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/user_model.dart';
@@ -321,31 +325,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Alignment.bottomRight, // Posisi icon di kanan bawah
                         children: [
                           // 1. Foto Profil (Tidak bisa diklik langsung)
-                          CircleAvatar(
-                            radius: 60, // Perbesar sedikit
-                            backgroundColor: Colors.green.shade100,
-                            backgroundImage:
-                                (user.profilePhotoPath != null &&
-                                    user.profilePhotoPath!.isNotEmpty)
-                                // Ganti URL ke endpoint proxy kita
-                                // Gunakan 127.0.0.1 atau IP LAN Anda (192.168.x.x) sesuai kebutuhan
-                                ? NetworkImage(
-                                    'http://192.168.1.3:8000/api/image-proxy/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}',
-                                  )
-                                : null,
-                            child:
-                                (user.profilePhotoPath == null ||
-                                    user.profilePhotoPath!.isEmpty)
-                                ? Text(
-                                    user.fullName.isNotEmpty
-                                        ? user.fullName[0].toUpperCase()
-                                        : '?',
-                                    style: TextStyle(
-                                      fontSize: 48,
-                                      color: Colors.green[800],
-                                    ),
-                                  )
-                                : null,
+                          GestureDetector(
+                            onTap: () {
+                              if (user.profilePhotoPath != null &&
+                                  user.profilePhotoPath!.isNotEmpty) {
+                                final imageUrl =
+                                    'http://127.0.0.1:8000/api/image-proxy/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}';
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        FullImageViewer(imageUrl: imageUrl),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Hero(
+                              tag:
+                                  'http://127.0.0.1:8000/api/image-proxy/${user.profilePhotoPath}', // unik
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: Colors.green.shade100,
+                                backgroundImage:
+                                    (user.profilePhotoPath != null &&
+                                        user.profilePhotoPath!.isNotEmpty)
+                                    ? NetworkImage(
+                                        'http://127.0.0.1:8000/api/image-proxy/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}',
+                                      )
+                                    : null,
+                                child:
+                                    (user.profilePhotoPath == null ||
+                                        user.profilePhotoPath!.isEmpty)
+                                    ? Text(
+                                        user.fullName.isNotEmpty
+                                            ? user.fullName[0].toUpperCase()
+                                            : '?',
+                                        style: TextStyle(
+                                          fontSize: 48,
+                                          color: Colors.green[800],
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                            ),
                           ),
 
                           // 2. Icon Edit (Kamera)
