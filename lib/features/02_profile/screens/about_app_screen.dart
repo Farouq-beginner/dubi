@@ -8,6 +8,7 @@ class AboutAppScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ABOUT US', style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
