@@ -5,6 +5,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/data_service.dart';
 import 'login_screen.dart';
 import '../../99_main_container/screens/main_container_screen.dart';
+import '../../02_profile/screens/about_app_screen.dart';
 
 class SmartSplashScreen extends StatefulWidget {
   const SmartSplashScreen({Key? key}) : super(key: key);
@@ -259,7 +260,7 @@ class _SmartSplashScreenState extends State<SmartSplashScreen>
             child: Column(
               children: [
                 const Text(
-                  "Pemeliharaan dadakan",
+                  "Sistem Sedang Dalam Pemeliharaan",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -269,7 +270,7 @@ class _SmartSplashScreenState extends State<SmartSplashScreen>
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  "Server Lagi Down, Mohon Bersabar",
+                  "Server Sedang Down, Mohon Bersabar",
                   style: TextStyle(color: Colors.white60, fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
@@ -299,11 +300,13 @@ class _SmartSplashScreenState extends State<SmartSplashScreen>
 
           // Tombol Aksi
           _buildActionButton(
-            label: "Buka Komunitas",
+            label: "About Us",
             icon: Icons.people,
             color: Colors.blueAccent,
             onTap: () {
-              /* Link ke Discord/WA */
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const AboutAppScreen()));
             },
           ),
           const SizedBox(height: 16),

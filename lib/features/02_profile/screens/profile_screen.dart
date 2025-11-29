@@ -436,7 +436,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: () {},
                 ),
                 _buildProfileTile(
-                  title: 'Tentang Aplikasi',
+                  title: 'About Us',
                   icon: Icons.info_outline,
                   onTap: () {
                     Navigator.push(
