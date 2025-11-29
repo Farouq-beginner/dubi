@@ -882,4 +882,29 @@ Future<String> uploadProfilePhoto(List<int> bytes, String filename) async {
   }
 
   Future checkAppUpdate(int currentBuild) async {}
+
+
+  // [BARU] Update Profil Saya (Guru/Siswa)
+  Future<User> updateMyProfile({
+    required String fullName,
+    required String email,
+    int? levelId,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/profile/update',
+        data: {
+          'full_name': fullName,
+          'email': email,
+          'level_id': levelId,
+        },
+      );
+      return User.fromJson(response.data['data']);
+    } on DioException catch (e) {
+      throw _handleDioError(e, 'Gagal memperbarui profil.');
+    }
+  }
+
+
+  
 }

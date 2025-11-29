@@ -158,38 +158,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       TextFormField(
                         controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama Lengkap',
-                        ),
-                        validator: (val) =>
-                            val!.isEmpty ? 'Nama tidak boleh kosong' : null,
+                        decoration: const InputDecoration(labelText: 'Nama Lengkap'),
+                        validator: (val) => val!.isEmpty ? 'Nama tidak boleh kosong' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: emailController,
                         decoration: const InputDecoration(labelText: 'Email'),
-                        validator: (val) => val!.isEmpty || !val.contains('@')
-                            ? 'Email tidak valid'
-                            : null,
+                        validator: (val) => val!.isEmpty || !val.contains('@') ? 'Email tidak valid' : null,
                       ),
                       if (user.role == 'student') ...[
                         const SizedBox(height: 16),
                         DropdownButtonFormField<int>(
                           value: selectedLevelId,
                           hint: const Text('Pilih Jenjang'),
-                          items: allLevels
-                              .map(
-                                (l) => DropdownMenuItem(
-                                  value: l.levelId,
-                                  child: Text(l.levelName),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (val) =>
-                              setDialogState(() => selectedLevelId = val),
-                          decoration: const InputDecoration(
-                            labelText: 'Jenjang',
-                          ),
+                          items: allLevels.map((l) => DropdownMenuItem(value: l.levelId, child: Text(l.levelName))).toList(),
+                          onChanged: (val) => setDialogState(() => selectedLevelId = val),
+                          decoration: const InputDecoration(labelText: 'Jenjang'),
                         ),
                       ],
                     ],
@@ -208,41 +193,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (!formKey.currentState!.validate()) return;
 
                 try {
-                  final auth = Provider.of<AuthProvider>(
-                    context,
-                    listen: false,
+                  // [PERBAIKAN DI SINI]
+                  // Jangan gunakan 'adminUpdateUser' di sini.
+                  // Gunakan 'updateMyProfile' untuk SEMUA role (termasuk Admin)
+                  // karena ini adalah fitur "Edit Profil Saya".
+                  
+                  await DataService(context).updateMyProfile(
+                    fullName: nameController.text,
+                    email: emailController.text,
+                    levelId: selectedLevelId,
                   );
 
-                  if (auth.user?.role == 'admin') {
-                    await DataService(context).adminUpdateUser(
-                      userId: user.userId,
-                      fullName: nameController.text,
-                      email: emailController.text,
-                      role: user.role,
-                      levelId: selectedLevelId,
-                    );
-                  } else {
-                    throw Exception(
-                      'Hubungi Admin untuk mengubah data profil utama.',
-                    );
-                  }
-
                   if (!mounted) return;
-                  await auth.refreshUser();
+                  
+                  // Refresh data user di provider
+                  await Provider.of<AuthProvider>(context, listen: false).refreshUser();
+                  
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Profil diperbarui!'),
-                      backgroundColor: Colors.green,
-                    ),
+                    const SnackBar(content: Text('Profil berhasil diperbarui!'), backgroundColor: Colors.green),
                   );
                 } catch (e) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString()),
-                      backgroundColor: Colors.red,
-                    ),
+                    SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
                   );
                 }
               },
