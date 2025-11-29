@@ -286,9 +286,14 @@ class _SmartSplashScreenState extends State<SmartSplashScreen>
                     const SizedBox(width: 8),
                     _buildDot(1.0),
                     const SizedBox(width: 12),
-                    const Text(
-                      "Sistem sedang diperbarui",
-                      style: TextStyle(color: Colors.blueAccent),
+                    Flexible(
+                      child: const Text(
+                        "Sistem sedang diperbarui",
+                        style: TextStyle(
+                          color: Colors.blueAccent,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ],
                 ),
