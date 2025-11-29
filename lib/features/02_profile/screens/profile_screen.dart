@@ -2,11 +2,7 @@
 import 'package:dubi/features/02_profile/screens/full_image_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
-import 'package:camera/camera.dart';
-import 'package:image_picker_web/image_picker_web.dart';
 
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/user_model.dart';
@@ -305,7 +301,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   user.profilePhotoPath!.isNotEmpty) {
                                 final imageUrl =
                                     'http://127.0.0.1:8000/api/image-proxy/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}';
-
+                                  // 10.0.2.2 jika di android emulator
+                                  // 127.0.0.1 jika di web atau ios simulator
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(

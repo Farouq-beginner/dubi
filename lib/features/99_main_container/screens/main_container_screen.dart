@@ -12,6 +12,7 @@ import 'package:animate_do/animate_do.dart';
 import '../../../core/providers/auth_provider.dart';
 
 // Import layar-layar
+import '../../01_dashboard/screens/notification_screen.dart';
 import '../../01_dashboard/screens/admin_user_management_screen.dart';
 import '../../01_dashboard/screens/browse_screen.dart';
 import '../../01_dashboard/screens/home_screen.dart';
@@ -32,7 +33,8 @@ class MainContainerScreen extends StatefulWidget {
   State<MainContainerScreen> createState() => _MainContainerScreenState();
 }
 
-class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsBindingObserver {
+class _MainContainerScreenState extends State<MainContainerScreen>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
   late List<Widget> _widgetOptions;
   bool _updateDialogShown = false; // prevent duplicate forced update dialogs
@@ -49,6 +51,13 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
       _authenticateUserSession();
       _checkUpdateFromProviderOrNetwork();
     });
+    // Cek notifikasi saat aplikasi dibuka
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AuthProvider>(
+        context,
+        listen: false,
+      ).checkUnreadNotifications();
+    });
   }
 
   @override
@@ -61,11 +70,14 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Panggil fungsi cek sesi di AuthProvider Anda
-      // Pastikan AuthProvider Anda memiliki method 'checkSession()' atau 'checkSessionValidity()'
       _authenticateUserSession();
       _checkUpdateFromProviderOrNetwork();
-      print("App Resumed: Checking session...");
+      // Refresh notifikasi saat aplikasi aktif kembali
+      Provider.of<AuthProvider>(
+        context,
+        listen: false,
+      ).checkUnreadNotifications();
+      print("App Resumed: Checking session and notifications...");
     }
   }
   // ---------------------------------------------
@@ -114,12 +126,18 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
     // Tampilkan teks/indikator ringan opsional? (skip, fokus ke dialog)
     final sessionValid = await dataService.checkSessionValidity();
     if (!sessionValid) {
-      if (!mounted || _sessionDialogShown) { _isCheckingSession = false; return; }
+      if (!mounted || _sessionDialogShown) {
+        _isCheckingSession = false;
+        return;
+      }
       _sessionDialogShown = true;
 
       // Tampilkan dialog setelah frame agar stabil di Android
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) { _isCheckingSession = false; return; }
+        if (!mounted) {
+          _isCheckingSession = false;
+          return;
+        }
         await showDialog(
           context: context,
           barrierDismissible: false,
@@ -175,23 +193,32 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
       final packageInfo = await PackageInfo.fromPlatform();
       final currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
       final base = auth.dio.options.baseUrl;
-      final root = base.endsWith('/api/') ? base.substring(0, base.length - 5) : base;
-      final uri = Uri.parse('$root/api/check-update?build_number=$currentBuild');
+      final root = base.endsWith('/api/')
+          ? base.substring(0, base.length - 5)
+          : base;
+      final uri = Uri.parse(
+        '$root/api/check-update?build_number=$currentBuild',
+      );
       final response = await http.get(uri).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         if (decoded is Map<String, dynamic>) {
-          final latestBuild = int.tryParse(decoded['latest_build']?.toString() ?? '0') ?? 0;
+          final latestBuild =
+              int.tryParse(decoded['latest_build']?.toString() ?? '0') ?? 0;
           final forceUpdate = decoded['update_required'] == true;
           final downloadUrl = decoded['download_url']?.toString() ?? '';
-          final changelog = decoded['changelog']?.toString() ?? 'Pembaruan tersedia.';
+          final changelog =
+              decoded['changelog']?.toString() ?? 'Pembaruan tersedia.';
           if (forceUpdate && latestBuild > currentBuild) {
             _updateDialogShown = true;
-            auth.setUpdateRequirement(required: true, info: {
-              'latest_build': latestBuild,
-              'download_url': downloadUrl,
-              'changelog': changelog,
-            });
+            auth.setUpdateRequirement(
+              required: true,
+              info: {
+                'latest_build': latestBuild,
+                'download_url': downloadUrl,
+                'changelog': changelog,
+              },
+            );
             if (!mounted) return;
             _showForceUpdateDialog(downloadUrl, changelog);
           }
@@ -217,9 +244,14 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Versi baru tersedia! Anda harus memperbarui aplikasi untuk melanjutkan.'),
+              const Text(
+                'Versi baru tersedia! Anda harus memperbarui aplikasi untuk melanjutkan.',
+              ),
               const SizedBox(height: 10),
-              const Text('Apa yang baru:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Apa yang baru:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Text(changelog),
             ],
           ),
@@ -234,7 +266,10 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
                 }
               },
               icon: const Icon(Icons.download, color: Colors.white),
-              label: const Text('Unduh Sekarang', style: TextStyle(color: Colors.white)),
+              label: const Text(
+                'Unduh Sekarang',
+                style: TextStyle(color: Colors.white),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 4, 31, 184),
               ),
@@ -279,6 +314,11 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
 
   @override
   Widget build(BuildContext context) {
+    // Ambil jumlah notifikasi dari Provider
+    final int unreadCount = Provider.of<AuthProvider>(
+      context,
+    ).unreadNotifications;
+
     return Scaffold(
       // 🌿 AppBar branding DuBI
       appBar: AppBar(
@@ -286,7 +326,11 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
         elevation: 0,
         title: Row(
           children: [
-            Icon(Icons.collections_bookmark_outlined, color: Colors.white, size: 40),
+            Icon(
+              Icons.collections_bookmark_outlined,
+              color: Colors.white,
+              size: 40,
+            ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,23 +368,80 @@ class _MainContainerScreenState extends State<MainContainerScreen> with WidgetsB
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color.fromARGB(255, 4, 31, 184), Color.fromARGB(255, 77, 80, 255)],
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
         ),
 
-        actions: const [
-          Icon(Icons.notifications_none, color: Colors.white),
-          SizedBox(width: 8),
+        actions: [
+          // --- [MODIFIKASI] Ikon Notifikasi dengan Badge ---
+          Consumer<AuthProvider>(
+            builder: (context, auth, child) {
+              final int unreadCount = auth.unreadNotifications;
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_none,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  // Tampilkan Badge Merah jika ada notif > 0
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 11,
+                      top: 11,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(width: 8),
         ],
       ),
 
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 500),
         transitionBuilder: (child, anim) {
-          final offsetAnim = Tween<Offset>(begin: const Offset(0.02, 0), end: Offset.zero).animate(anim);
+          final offsetAnim = Tween<Offset>(
+            begin: const Offset(0.02, 0),
+            end: Offset.zero,
+          ).animate(anim);
           return FadeTransition(
             opacity: anim,
             child: SlideTransition(position: offsetAnim, child: child),

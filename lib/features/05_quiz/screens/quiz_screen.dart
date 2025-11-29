@@ -1,10 +1,13 @@
 // lib/features/05_quiz/screens/quiz_screen.dart
 import 'dart:async';
+import 'package:dubi/core/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/models/quiz_model.dart';
 import '../../../core/models/question_model.dart';
 import '../../../core/models/answer_model.dart';
 import '../../../core/services/data_service.dart';
+import '../../../core/services/local_notification_service.dart';
 import 'quiz_result_screen.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -91,6 +94,15 @@ class _QuizScreenState extends State<QuizScreen> {
       ); // <-- Gunakan widget.quizId
 
       if (!mounted) return;
+
+      // Ini akan memaksa AuthProvider untuk cek ke server berapa jumlah notif sekarang
+      await Provider.of<AuthProvider>(context, listen: false).checkUnreadNotifications();
+
+      // --- [BARU] TAMPILKAN NOTIFIKASI DI STATUS BAR HP ---
+      LocalNotificationService.showNotification(
+        title: 'Kuis Selesai! 🎉',
+        body: 'Hebat! Anda menyelesaikan kuis "${widget.quizTitle}" dengan skor ${results['score']}.'
+      );
 
       if (autoSubmit) {
         ScaffoldMessenger.of(context).showSnackBar(

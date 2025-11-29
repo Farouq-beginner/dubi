@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'dart:io';
 
 // Import semua model dari core
+import '../models/notification_model.dart';
 import '../models/user_model.dart';
 import '../models/level_model.dart';
 import '../models/subject_model.dart';
@@ -905,6 +906,32 @@ Future<String> uploadProfilePhoto(List<int> bytes, String filename) async {
     }
   }
 
+  // --- NOTIFICATION API ---
+  Future<List<NotificationModel>> fetchNotifications() async {
+    try {
+      final response = await _dio.get('/notifications');
+      List<dynamic> data = response.data['data'];
+      return data.map((json) => NotificationModel.fromJson(json)).toList();
+    } catch (e) {
+      return []; // Return kosong jika gagal
+    }
+  }
 
+  Future<int> fetchUnreadCount() async {
+    try {
+      final response = await _dio.get('/notifications/unread-count');
+      return response.data['count'] ?? 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  Future<void> markNotificationRead(int id) async {
+    await _dio.post('/notifications/$id/read');
+  }
   
+  Future<void> markAllRead() async {
+    await _dio.post('/notifications/read-all');
+  }
+
 }

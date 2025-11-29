@@ -6,6 +6,9 @@ import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 
 class AuthProvider with ChangeNotifier {
+  int _unreadNotifications = 0; // State Badge
+  int get unreadNotifications => _unreadNotifications;
+
   // --- STATE & TOOLS ---
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final Dio _dio = Dio(
@@ -26,7 +29,8 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = true;
   // Update info controlled by AuthCheckScreen
   bool _updateRequired = false;
-  Map<String, dynamic>? _updateInfo; // contains latest_build, download_url, changelog
+  Map<String, dynamic>?
+  _updateInfo; // contains latest_build, download_url, changelog
 
   // --- GETTERS ---
   User? get user => _user;
@@ -44,7 +48,10 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Called by AuthCheckScreen to override update requirement state
-  void setUpdateRequirement({required bool required, Map<String, dynamic>? info}) {
+  void setUpdateRequirement({
+    required bool required,
+    Map<String, dynamic>? info,
+  }) {
     _updateRequired = required;
     _updateInfo = info;
     notifyListeners();
@@ -56,13 +63,13 @@ class AuthProvider with ChangeNotifier {
     try {
       // Panggil endpoint ringan (misal: /user atau /server/session)
       // Jika endpoint ini mengembalikan 401, Interceptor akan otomatis menangkapnya
-      await _dio.get('/user'); 
+      await _dio.get('/user');
     } catch (e) {
       // Error akan ditangani oleh Interceptor atau diabaikan jika bukan 401
     }
   }
 
-Future<bool> checkSessionValidity() async {
+  Future<bool> checkSessionValidity() async {
     try {
       // Panggil endpoint user
       final response = await _dio.get('/user');
@@ -73,8 +80,6 @@ Future<bool> checkSessionValidity() async {
       return false;
     }
   }
-
-  
 
   // Helper Hapus Data Lokal
   Future<void> _clearLocalData() async {
@@ -137,21 +142,20 @@ Future<bool> checkSessionValidity() async {
     }
   }
 
-
   /// [PUBLIC] Refresh data user dari server agar halaman Profile bisa pull-to-refresh
-Future<void> refreshUser() async {
+  Future<void> refreshUser() async {
     try {
       // Panggil endpoint standar '/user'
       final response = await _dio.get('/user');
-      
+
       if (response.statusCode == 200) {
         final data = response.data;
-        
+
         // Logika parsing yang lebih aman
         // Backend Laravel biasanya mengembalikan objek user langsung,
         // tapi kadang dibungkus dalam 'data' atau 'user' tergantung konfigurasi resource.
         Map<String, dynamic> userMap;
-        
+
         if (data['user'] != null) {
           userMap = data['user'];
         } else if (data['data'] != null) {
@@ -165,15 +169,37 @@ Future<void> refreshUser() async {
 
         // [PENTING] Simpan dengan key 'user_data' (harus sama dengan saat login/load)
         await _storage.write(
-          key: 'user_data', 
-          value: jsonEncode(_user!.toJson())
+          key: 'user_data',
+          value: jsonEncode(_user!.toJson()),
         );
-        
+
         notifyListeners();
       }
     } catch (e) {
       print("Gagal refresh user: $e");
       // Opsional: Jangan logout user jika hanya gagal refresh (misal karena koneksi)
+    }
+  }
+
+  // Fungsi untuk update badge
+  void setUnreadCount(int count) {
+    _unreadNotifications = count;
+    notifyListeners();
+  }
+
+  // Panggil ini saat aplikasi mulai atau refresh
+  Future<void> checkUnreadNotifications() async {
+    try {
+      final response = await _dio.get('notifications/unread-count');
+
+      // Perbaikan struktur respons
+      final int count =
+          response.data['count'] ?? response.data['data']?['count'] ?? 0;
+
+      _unreadNotifications = count;
+      notifyListeners(); // <— ini yang memicu badge langsung update
+    } catch (e) {
+      print("Error checkUnreadNotifications: $e");
     }
   }
 
@@ -211,8 +237,8 @@ Future<void> refreshUser() async {
     }
   }
 
-// Update fungsi logout agar menggunakan helper
-Future<void> logout() async {
+  // Update fungsi logout agar menggunakan helper
+  Future<void> logout() async {
     try {
       await _dio.post('/logout');
     } catch (e) {
@@ -221,11 +247,11 @@ Future<void> logout() async {
       await _clearLocalData();
     }
   }
-  
-   Future<bool> loadUserFromStorage() async {
+
+  Future<bool> loadUserFromStorage() async {
     // Logic sama dengan _init tapi publik
-     await _init();
-     return _token != null;
+    await _init();
+    return _token != null;
   }
 
   /// [PUBLIC] Handle Forgot Password

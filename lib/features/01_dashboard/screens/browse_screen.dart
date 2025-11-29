@@ -101,7 +101,7 @@ class _BrowseScreenState extends State<BrowseScreen>
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final String rawName = auth.user?.username ?? '';
+    final String rawName = auth.user?.fullName ?? '';
     final String displayName = rawName.trim().isNotEmpty
         ? rawName.trim()
         : 'Pengguna';
