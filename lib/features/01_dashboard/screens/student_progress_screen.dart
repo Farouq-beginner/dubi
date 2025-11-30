@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/student_dashboard_model.dart';
 import '../../../core/services/data_service.dart';
+import 'package:intl/intl.dart'; // Import ini
 
 class StudentProgressScreen extends StatefulWidget {
   const StudentProgressScreen({super.key});
@@ -406,6 +407,16 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
     final scoreColor = item.score >= 80
         ? Colors.green
         : (item.score >= 60 ? Colors.orange : Colors.red);
+
+    // [PERBAIKAN FORMAT TANGGAL]
+    String formattedDate = item.completedAt;
+    try {
+      DateTime date = DateTime.parse(item.completedAt).toLocal();
+      formattedDate = DateFormat(
+        'd MMM, HH:mm',
+      ).format(date); // Contoh: 30 Nov, 10:00
+    } catch (_) {}
+
     return Card(
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 8),
@@ -422,8 +433,9 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
         ),
         title: Text(item.quizTitle),
         subtitle: const Text('Skor Tertinggi'),
+        // Gunakan tanggal yang sudah diformat
         trailing: Text(
-          item.completedAt.substring(0, 10),
+          formattedDate,
           style: TextStyle(color: Colors.grey[600], fontSize: 12),
         ),
       ),

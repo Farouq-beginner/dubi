@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/models/notification_model.dart';
 import '../../../core/services/data_service.dart';
 import '../../../core/providers/auth_provider.dart';
+import 'package:intl/intl.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -174,11 +175,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
             Text(notif.body),
             const SizedBox(height: 6),
             // Tampilkan JAM saja (karena tanggal sudah di header)
-            Text(
-              notif.createdAt.length > 16 
-                   ? notif.createdAt.substring(11, 16) // Ambil jam:menit (contoh: 14:30)
-                   : notif.createdAt,
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            Builder(
+              builder: (context) {
+                try {
+                   final date = DateTime.parse(notif.createdAt).toLocal();
+                   // Tampilkan Jam dan Menit saja (karena tanggal sudah di header)
+                   return Text(
+                      DateFormat('HH:mm').format(date), 
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                   );
+                } catch (e) {
+                   return const Text("-");
+                }
+              }
             ),
           ],
         ),
