@@ -13,7 +13,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _codeController = TextEditingController();
   final _passController = TextEditingController();
   final _confirmPassController = TextEditingController();
-  
+
   final _formKey = GlobalKey<FormState>();
   late DataService _dataService;
 
@@ -38,11 +38,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   }
 
   // --- Logic 1: Kirim Kode ---
-Future<void> _sendCode() async {
+  Future<void> _sendCode() async {
     setState(() => _isLoading = true);
     try {
       final message = await _dataService.sendPasswordCode();
-      
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.green),
@@ -52,22 +52,21 @@ Future<void> _sendCode() async {
       setState(() {
         _isCodeSent = true; // <-- INI YANG AKAN MEMBUKA FORM RESET PASSWORD
       });
-
     } catch (e) {
       if (!mounted) return;
-      
+
       // Jika terjadi error (misalnya timeout), tetap tampilkan error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
       );
-      
+
       // [PERBAIKAN] Tambahkan opsi untuk pindah manual jika yakin kode sudah terkirim
-      if (e.toString().contains('Koneksi lambat')) { // Berdasarkan pesan error yang kita buat
-         setState(() {
-            _isCodeSent = true; 
-         });
+      if (e.toString().contains('Koneksi lambat')) {
+        // Berdasarkan pesan error yang kita buat
+        setState(() {
+          _isCodeSent = true;
+        });
       }
-      
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -89,10 +88,9 @@ Future<void> _sendCode() async {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.green),
       );
-      
+
       // Kembali ke halaman profil setelah sukses
       Navigator.pop(context);
-
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -107,8 +105,25 @@ Future<void> _sendCode() async {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ganti Password'),
-        backgroundColor: Colors.green,
+        title: const Text(
+          'Ganti Password',
+          style: TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
+        elevation: 1,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -122,7 +137,11 @@ Future<void> _sendCode() async {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.mark_email_read_outlined, size: 80, color: Colors.green),
+        const Icon(
+          Icons.mark_email_read_outlined,
+          size: 80,
+          color: Colors.blueAccent,
+        ),
         const SizedBox(height: 24),
         const Text(
           'Demi keamanan, kami perlu memverifikasi email Anda.',
@@ -143,11 +162,16 @@ Future<void> _sendCode() async {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: _isLoading
                 ? const CircularProgressIndicator(color: Colors.white)
-                : const Text('Kirim Kode Verifikasi', style: TextStyle(fontSize: 16, color: Colors.white)),
+                : const Text(
+                    'Kirim Kode Verifikasi',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
           ),
         ),
       ],
@@ -166,14 +190,16 @@ Future<void> _sendCode() async {
             style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
-          
+
           // 1. Input Kode
           TextFormField(
             controller: _codeController,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
               labelText: 'Kode Verifikasi (6 Digit)',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               prefixIcon: const Icon(Icons.vpn_key),
             ),
             validator: (value) {
@@ -190,10 +216,14 @@ Future<void> _sendCode() async {
             obscureText: _obscurePass,
             decoration: InputDecoration(
               labelText: 'Password Baru',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               prefixIcon: const Icon(Icons.lock),
               suffixIcon: IconButton(
-                icon: Icon(_obscurePass ? Icons.visibility_off : Icons.visibility),
+                icon: Icon(
+                  _obscurePass ? Icons.visibility_off : Icons.visibility,
+                ),
                 onPressed: () => setState(() => _obscurePass = !_obscurePass),
               ),
             ),
@@ -211,20 +241,26 @@ Future<void> _sendCode() async {
             obscureText: _obscureConfirm,
             decoration: InputDecoration(
               labelText: 'Ulangi Password Baru',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
-                icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                icon: Icon(
+                  _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                ),
+                onPressed: () =>
+                    setState(() => _obscureConfirm = !_obscureConfirm),
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Konfirmasi password wajib diisi';
+              if (value == null || value.isEmpty)
+                return 'Konfirmasi password wajib diisi';
               if (value != _passController.text) return 'Password tidak sama';
               return null;
             },
           ),
-          
+
           const SizedBox(height: 32),
 
           // Tombol Simpan
@@ -235,11 +271,16 @@ Future<void> _sendCode() async {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: _isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Simpan Password Baru', style: TextStyle(fontSize: 16, color: Colors.white)),
+                  : const Text(
+                      'Simpan Password Baru',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
             ),
           ),
         ],

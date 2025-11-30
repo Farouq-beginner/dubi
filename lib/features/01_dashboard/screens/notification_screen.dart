@@ -30,7 +30,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
     await _dataService.markAllRead();
     if (mounted) {
       // Update badge notifikasi di AppBar utama agar hilang (jadi 0)
-      Provider.of<AuthProvider>(context, listen: false).checkUnreadNotifications();
+      Provider.of<AuthProvider>(
+        context,
+        listen: false,
+      ).checkUnreadNotifications();
     }
   }
 
@@ -53,8 +56,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
     } else {
       // Format Tanggal Manual: "22 Nov 2025"
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-        'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Ags',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des',
       ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     }
@@ -64,10 +77,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Notifikasi"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: const Text('Notifikasi', style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
         elevation: 1,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 4, 31, 184),
+                Color.fromARGB(255, 77, 80, 255),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: FutureBuilder<List<NotificationModel>>(
         future: _notifFuture,
@@ -80,9 +105,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.notifications_off_outlined, size: 60, color: Colors.grey),
+                  Icon(
+                    Icons.notifications_off_outlined,
+                    size: 60,
+                    color: Colors.grey,
+                  ),
                   SizedBox(height: 16),
-                  Text("Belum ada notifikasi", style: TextStyle(color: Colors.grey)),
+                  Text(
+                    "Belum ada notifikasi",
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
             );
@@ -93,7 +125,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           // --- LOGIKA PENGELOMPOKAN (GROUPING) ---
           // Map: "Hari ini" -> [Notif1, Notif2], "22 Nov" -> [Notif3]
           Map<String, List<NotificationModel>> groupedNotifs = {};
-          
+
           for (var notif in notifs) {
             String header = _getGroupHeader(notif.createdAt);
             if (!groupedNotifs.containsKey(header)) {
@@ -120,13 +152,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     child: Text(
                       header,
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold, 
-                        fontSize: 14, 
-                        color: Colors.grey
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.grey,
                       ),
                     ),
                   ),
-                  
+
                   // 2. TAMPILKAN LIST NOTIFIKASI DI BAWAHNYA
                   ...items.map((notif) => _buildNotifTile(notif)).toList(),
                 ],
@@ -158,15 +190,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
 
     return Container(
-      color: notif.isRead ? Colors.white : Colors.blue[50], // Highlight biru muda jika belum dibaca
+      color: notif.isRead
+          ? Colors.white
+          : Colors.blue[50], // Highlight biru muda jika belum dibaca
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: color.withOpacity(0.1),
           child: Icon(icon, color: color),
         ),
         title: Text(
-          notif.title, 
-          style: TextStyle(fontWeight: notif.isRead ? FontWeight.normal : FontWeight.bold),
+          notif.title,
+          style: TextStyle(
+            fontWeight: notif.isRead ? FontWeight.normal : FontWeight.bold,
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,16 +214,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
             Builder(
               builder: (context) {
                 try {
-                   final date = DateTime.parse(notif.createdAt).toLocal();
-                   // Tampilkan Jam dan Menit saja (karena tanggal sudah di header)
-                   return Text(
-                      DateFormat('HH:mm').format(date), 
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                   );
+                  final date = DateTime.parse(notif.createdAt).toLocal();
+                  // Tampilkan Jam dan Menit saja (karena tanggal sudah di header)
+                  return Text(
+                    DateFormat('HH:mm').format(date),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  );
                 } catch (e) {
-                   return const Text("-");
+                  return const Text("-");
                 }
-              }
+              },
             ),
           ],
         ),
