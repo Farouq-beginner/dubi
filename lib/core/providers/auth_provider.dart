@@ -18,7 +18,7 @@ class AuthProvider with ChangeNotifier {
       // Gunakan http://127.0.0.1:8000 jika menjalankan di Chrome (Web)
       // Pastikan server 'php artisan serve' Anda tetap berjalan!
       // Ganti '10.0.2.2' dengan '127.0.0.1' jika menjalankan di web (Chrome)
-      baseUrl: 'https://handsome-harmony-production.up.railway.app/api/',
+      baseUrl: 'http://127.0.0.1:8000/api/',
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ),

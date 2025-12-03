@@ -84,30 +84,26 @@ class DataService {
   // --- PROFILE Operations (Foto & Password) -------------------------
   // ------------------------------------------------------------------
 
-// [PERBAIKAN] 1. Upload Foto Profil
-Future<String> uploadProfilePhoto(List<int> bytes, String filename) async {
+  // [PERBAIKAN] 1. Upload Foto Profil
+  Future<String> uploadProfilePhoto(List<int> bytes, String filename) async {
     try {
       FormData formData = FormData.fromMap({
         "photo": MultipartFile.fromBytes(bytes, filename: filename),
       });
 
-      final response = await _dio.post(
-        '/profile/update-photo', 
-        data: formData,
-      );
+      final response = await _dio.post('/profile/update-photo', data: formData);
 
       // Pastikan response data valid sebelum akses
       if (response.data != null && response.data['data'] != null) {
-         return response.data['data']['url'].toString();
+        return response.data['data']['url'].toString();
       }
       throw 'Format respon server tidak valid.';
-
     } on DioException catch (e) {
       print("Upload Error: ${e.response?.data}");
       throw _handleDioError(e, 'Gagal mengunggah foto profil.');
     } catch (e) {
-       print("File Error: $e");
-       throw "Gagal memproses file gambar.";
+      print("File Error: $e");
+      throw "Gagal memproses file gambar.";
     }
   }
 
@@ -884,7 +880,6 @@ Future<String> uploadProfilePhoto(List<int> bytes, String filename) async {
 
   Future checkAppUpdate(int currentBuild) async {}
 
-
   // [BARU] Update Profil Saya (Guru/Siswa)
   Future<User> updateMyProfile({
     required String fullName,
@@ -894,11 +889,7 @@ Future<String> uploadProfilePhoto(List<int> bytes, String filename) async {
     try {
       final response = await _dio.put(
         '/profile/update',
-        data: {
-          'full_name': fullName,
-          'email': email,
-          'level_id': levelId,
-        },
+        data: {'full_name': fullName, 'email': email, 'level_id': levelId},
       );
       return User.fromJson(response.data['data']);
     } on DioException catch (e) {
@@ -929,9 +920,8 @@ Future<String> uploadProfilePhoto(List<int> bytes, String filename) async {
   Future<void> markNotificationRead(int id) async {
     await _dio.post('/notifications/$id/read');
   }
-  
+
   Future<void> markAllRead() async {
     await _dio.post('/notifications/read-all');
   }
-
 }

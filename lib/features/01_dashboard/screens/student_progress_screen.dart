@@ -73,14 +73,14 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                     );
 
                     final cards = <Widget>[
-                      wrapCard(
-                        _buildStatCard(
-                          'Course Selesai',
-                          stats.coursesCompleted.toString(),
-                          Icons.check_circle_outline,
-                          Colors.green,
-                        ),
-                      ),
+                      //   wrapCard(
+                      //     _buildStatCard(
+                      //       'Course Selesai',
+                      //       stats.coursesCompleted.toString(),
+                      //       Icons.check_circle_outline,
+                      //       Colors.green,
+                      //     ),
+                      //   ),
                       wrapCard(
                         _buildStatCard(
                           'Kuis Lulus',
@@ -89,22 +89,22 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
                           Colors.purple,
                         ),
                       ),
-                      wrapCard(
-                        _buildStatCard(
-                          'Streak Terpanjang',
-                          '0 hari',
-                          Icons.local_fire_department_outlined,
-                          Colors.orange,
-                        ),
-                      ),
-                      wrapCard(
-                        _buildStatCardWithImage(
-                          'Favorit',
-                          'Bahasa',
-                          'assets/images/icon_bahasa.png',
-                          Colors.blue,
-                        ),
-                      ),
+                      // wrapCard(
+                      //   _buildStatCard(
+                      //     'Streak Terpanjang',
+                      //     '0 hari',
+                      //     Icons.local_fire_department_outlined,
+                      //     Colors.orange,
+                      //   ),
+                      // ),
+                      // wrapCard(
+                      //   _buildStatCardWithImage(
+                      //     'Favorit',
+                      //     'Bahasa',
+                      //     'assets/images/icon_bahasa.png',
+                      //     Colors.blue,
+                      //   ),
+                      // ),
                     ];
 
                     if (width >= 900) {

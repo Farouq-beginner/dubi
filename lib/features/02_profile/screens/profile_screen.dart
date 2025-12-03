@@ -325,7 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               if (user.profilePhotoPath != null &&
                                   user.profilePhotoPath!.isNotEmpty) {
                                 final imageUrl =
-                                    'https://handsome-harmony-production.up.railway.app/api/image-proxy/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}';
+                                    'http://127.0.0.1:8000/api/image-proxy/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}';
                                 // 10.0.2.2 jika di android emulator
                                 // 127.0.0.1 jika di web atau ios simulator
                                 Navigator.push(
@@ -339,7 +339,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                             child: Hero(
                               tag:
-                                  'https://handsome-harmony-production.up.railway.app/api/image-proxy/${user.profilePhotoPath}', // unik
+                                  'http://127.0.0.1:8000/api/image-proxy/${user.profilePhotoPath}', // unik
                               child: CircleAvatar(
                                 radius: 60,
                                 backgroundColor: Colors.green.shade100,
@@ -347,7 +347,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     (user.profilePhotoPath != null &&
                                         user.profilePhotoPath!.isNotEmpty)
                                     ? NetworkImage(
-                                        'https://handsome-harmony-production.up.railway.app/api/image-proxy/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}',
+                                        'http://127.0.0.1:8000/api/image-proxy/${user.profilePhotoPath}?v=${DateTime.now().millisecondsSinceEpoch}',
                                       )
                                     : null,
                                 child:
